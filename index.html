@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>旅游搭子测试 · 发现你的旅行人格</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+:root{--paper:#faf6ef;--paper-dark:#f0e8da;--ink:#2c3e50;--ink-light:#5a6c7d;--orange:#e8743b;--orange-light:#f5a623;--blue:#3a6b8a;--card:#fffaf2;--shadow:0 2px 12px rgba(44,62,80,.08);--shadow-lg:0 8px 32px rgba(44,62,80,.12);--radius:16px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden}
+.serif{font-family:'Noto Serif SC',serif}
+
+/* Welcome */
+#welcome{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:linear-gradient(135deg,#faf6ef,#f5ede0);position:relative}
+#welcome::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(232,116,59,.06) 0,transparent 50%),radial-gradient(circle at 80% 70%,rgba(58,107,138,.06) 0,transparent 50%);pointer-events:none}
+.welcome-card{max-width:480px;width:100%;text-align:center;position:relative;z-index:1}
+.welcome-stamp{display:inline-block;padding:6px 20px;border:2px solid var(--orange);border-radius:4px;color:var(--orange);font-size:13px;font-weight:700;letter-spacing:2px;margin-bottom:24px;transform:rotate(-3deg);font-family:'Noto Serif SC',serif}
+.welcome-title{font-family:'Noto Serif SC',serif;font-size:42px;font-weight:900;color:var(--ink);line-height:1.2;margin-bottom:12px}
+.welcome-sub{font-size:16px;color:var(--ink-light);line-height:1.6;margin-bottom:32px}
+.welcome-types{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:36px}
+.type-chip{padding:4px 12px;background:var(--card);border:1px solid var(--paper-dark);border-radius:20px;font-size:12px;color:var(--ink-light)}
+.start-btn{display:inline-block;padding:16px 48px;background:var(--ink);color:#fff;border:none;border-radius:30px;font-size:18px;font-weight:700;font-family:'Noto Serif SC',serif;cursor:pointer;transition:all .3s;box-shadow:0 4px 16px rgba(44,62,80,.2)}
+.start-btn:hover{background:var(--orange);transform:translateY(-2px)}
+.welcome-meta{margin-top:24px;font-size:13px;color:var(--ink-light)}
+.welcome-meta span{margin:0 8px}
+
+/* Quiz */
+#quiz{display:none;min-height:100vh;padding:20px}
+.quiz-header{max-width:560px;margin:0 auto 20px;display:flex;align-items:center;justify-content:space-between}
+.quiz-header-left{display:flex;gap:10px;align-items:center}
+.quiz-back{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card);border:1px solid var(--paper-dark);border-radius:20px;font-size:14px;color:var(--ink-light);cursor:pointer;transition:all .2s}
+.quiz-back:hover{color:var(--orange);border-color:var(--orange)}
+.quiz-back.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.quiz-back svg{width:16px;height:16px}
+.quiz-restart{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card);border:1px solid var(--paper-dark);border-radius:20px;font-size:14px;color:var(--ink-light);cursor:pointer;transition:all .2s}
+.quiz-restart:hover{color:var(--blue);border-color:var(--blue)}
+.quiz-restart svg{width:16px;height:16px}
+.quiz-progress-text{font-size:13px;color:var(--ink-light);font-weight:500}
+.progress-bar{max-width:560px;margin:0 auto 24px;height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:3px;transition:width .4s ease}
+.quiz-container{max-width:560px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:32px 24px;box-shadow:var(--shadow)}
+.quiz-dim{display:inline-block;padding:4px 12px;background:var(--paper-dark);border-radius:12px;font-size:12px;color:var(--ink-light);margin-bottom:16px}
+.quiz-stem{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;color:var(--ink);line-height:1.5;margin-bottom:24px}
+.opt-list{display:flex;flex-direction:column;gap:12px}
+.opt-item{padding:16px 20px;background:var(--paper);border:2px solid transparent;border-radius:12px;font-size:16px;color:var(--ink);cursor:pointer;transition:all .2s;line-height:1.5;display:flex;align-items:flex-start;gap:12px;position:relative}
+.opt-item:hover{border-color:var(--orange);background:#fff;transform:translateX(4px)}
+.opt-item.prev-selected{border-color:var(--blue);border-style:dashed;background:#f0f7fb}
+.opt-item.prev-selected::after{content:'上次选择';position:absolute;top:-8px;right:12px;padding:2px 8px;background:var(--blue);color:#fff;font-size:10px;border-radius:8px;font-weight:500}
+.opt-num{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--paper-dark);color:var(--ink-light);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.opt-item:hover .opt-num{background:var(--orange);color:#fff}
+.opt-item.prev-selected .opt-num{background:var(--blue);color:#fff}
+.quiz-footer{max-width:560px;margin:20px auto 0;display:flex;justify-content:space-between;align-items:center}
+.footer-hint{font-size:12px;color:var(--ink-light)}
+
+/* Result */
+#result{display:none;min-height:100vh;padding:20px}
+.result-container{max-width:560px;margin:0 auto;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-lg)}
+.result-header{padding:40px 24px 28px;text-align:center;background:linear-gradient(135deg,var(--ink),#1a2a3a);color:#fff;position:relative}
+.result-stamp{display:inline-block;padding:4px 16px;border:1.5px solid rgba(255,255,255,.4);border-radius:4px;font-size:11px;letter-spacing:2px;margin-bottom:16px;color:rgba(255,255,255,.8);transform:rotate(-2deg)}
+.result-emoji{font-size:56px;margin-bottom:8px;line-height:1}
+.result-type{font-family:'Noto Serif SC',serif;font-size:28px;font-weight:900;margin-bottom:8px}
+.result-tagline{font-size:14px;opacity:.8}
+.result-body{padding:28px 24px}
+.result-rate-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:16px;background:var(--paper);border-radius:12px}
+.rate-circle{flex-shrink:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--orange) calc(var(--rate)*1%),var(--paper-dark) 0);display:flex;align-items:center;justify-content:center;position:relative}
+.rate-circle::before{content:'';position:absolute;width:50px;height:50px;border-radius:50%;background:var(--card)}
+.rate-num{position:relative;z-index:1;font-size:18px;font-weight:900;color:var(--orange)}
+.rate-label{font-size:13px;color:var(--ink-light);line-height:1.4}
+.rate-label strong{color:var(--ink);font-size:15px}
+.result-desc{font-size:15px;color:var(--ink);line-height:1.7;margin-bottom:24px;padding:16px;background:var(--paper);border-radius:12px;border-left:3px solid var(--orange)}
+.result-section-title{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.buddy-list{display:flex;gap:12px;margin-bottom:24px}
+.buddy-card{flex:1;padding:16px 12px;background:var(--paper);border-radius:12px;text-align:center}
+.buddy-emoji{font-size:28px;margin-bottom:6px}
+.buddy-name{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.buddy-tag{font-size:11px;color:var(--ink-light);line-height:1.3}
+.top5-list{margin-bottom:24px}
+.top5-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin-bottom:4px;transition:background .2s}
+.top5-item:hover{background:var(--paper)}
+.top5-rank{font-size:14px;font-weight:900;color:var(--orange);width:20px}
+.top5-name{flex:1;font-size:14px;color:var(--ink)}
+.top5-bar{flex-shrink:0;width:80px;height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden}
+.top5-fill{height:100%;background:var(--orange);border-radius:3px}
+.top5-score{font-size:12px;color:var(--ink-light);width:28px;text-align:right}
+.result-actions{display:flex;gap:12px;padding:0 24px 24px}
+.action-btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Noto Sans SC',sans-serif}
+.action-btn.share{background:var(--blue);color:#fff}
+.action-btn.share:hover{background:#2c5570}
+.action-btn.retry{background:var(--paper-dark);color:var(--ink)}
+.action-btn.retry:hover{background:var(--paper)}
+
+/* Screenshot toast */
+#screenshotToast{display:none;position:fixed;bottom:40px;left:50%;transform:translateX(-50%);padding:12px 24px;background:var(--ink);color:#fff;border-radius:24px;font-size:14px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#screenshotToast.show{display:block;animation:fadeIn .3s ease}
+
+/* Animations */
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.slide-in{animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* Responsive */
+@media(max-width:400px){.welcome-title{font-size:32px}.quiz-stem{font-size:19px}.opt-item{font-size:14px;padding:14px 16px}.result-type{font-size:24px}.buddy-list{flex-direction:column}.quiz-header-left{flex-direction:column;gap:6px}}
+</style>
+</head>
+<body>
+
+<div id="welcome">
+  <div class="welcome-card fade-in">
+    <div class="welcome-stamp">TRAVEL BUDDY QUIZ</div>
+    <h1 class="welcome-title">旅游搭子测试</h1>
+    <p class="welcome-sub">48种旅行人格，144道场景题<br>发现你在旅途中的真实模样</p>
+    <div class="welcome-types" id="welcomeTypes"></div>
+    <button class="start-btn" onclick="startQuiz()">出发 →</button>
+    <div class="welcome-meta"><span>18道精选题</span>·<span>约3分钟</span>·<span>CAT自适应</span></div>
+  </div>
+</div>
+
+<div id="quiz">
+  <div class="quiz-header">
+    <div class="quiz-header-left">
+      <div class="quiz-back disabled" id="backBtn" onclick="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>上一题
+      </div>
+      <div class="quiz-restart" onclick="restartQuiz()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>重新测试
+      </div>
+    </div>
+    <div class="quiz-progress-text" id="progressText">1 / 18</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5.5%"></div></div>
+  <div class="quiz-container" id="quizContainer">
+    <div class="quiz-dim" id="quizDim"></div>
+    <div class="quiz-stem" id="quizStem"></div>
+    <div class="opt-list" id="optList"></div>
+  </div>
+  <div class="quiz-footer">
+    <div class="footer-hint">按 1-4 选答案 · ← 返回上一题</div>
+    <div class="footer-hint" id="layerHint"></div>
+  </div>
+</div>
+
+<div id="result">
+  <div class="result-container fade-in" id="resultContainer">
+    <div class="result-header">
+      <div class="result-stamp">YOUR TRAVEL TYPE</div>
+      <div class="result-emoji" id="resultEmoji"></div>
+      <div class="result-type" id="resultType"></div>
+      <div class="result-tagline" id="resultTagline"></div>
+    </div>
+    <div class="result-body">
+      <div class="result-rate-row">
+        <div class="rate-circle" id="rateCircle" style="--rate:0"><div class="rate-num" id="rateNum">0%</div></div>
+        <div class="rate-label"><strong>匹配度</strong><br>你与这个旅行人格的契合程度</div>
+      </div>
+      <div class="result-desc" id="resultDesc"></div>
+      <div class="result-section-title">✦ 最佳搭子</div>
+      <div class="buddy-list" id="buddyList"></div>
+      <div class="result-section-title">✦ 你的旅行人格 Top5</div>
+      <div class="top5-list" id="top5List"></div>
+    </div>
+    <div class="result-actions">
+      <button class="action-btn share" onclick="takeScreenshot()">截图分享</button>
+      <button class="action-btn retry" onclick="restart()">再测一次</button>
+    </div>
+  </div>
+</div>
+
+<div id="screenshotToast">截图已保存到相册</div>
+
+<script>
+/**
+ * engine_v6.js — 旅游搭子测试计分引擎（与 Python engine_v6.py 同源 questions.json）
+ * CAT 选路(固定18) + 支持度加权破平 + shuffle + 匹配度 + 分享编码
+ * 浏览器与 Node 通用；Node 下挂到 module.exports 供 KS 一致性检验
+ */
+(function (root, factory) {
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.TravelBuddyEngine = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var ENGINE = {};
+
+  // 规则集（与 Python 同源，48类型全覆盖）
+  var RULE_SETS = [
+    ["路痴本痴","领航员","出门困难户","倒霉蛋"],
+    ["出片者","打卡狂魔","纪录片导演"],
+    ["纪录片导演","讲解器转世","资深剧评人"],
+    ["美食雷达","路边摊冒险家","中餐续命者"],
+    ["中餐续命者","外卖鉴赏家","思乡者"],
+    ["躺平仙人","罗马觉皇","思乡者","时差冤魂"],
+    ["夜生活之王","时差冤魂","特种兵王"],
+    ["精算师","小费数学家","人型汇率计算器","现金乞丐"],
+    ["社牛天花板","全村的希望","甜蜜连麦者"],
+    ["赛博浪人","Wi-Fi搜寻者","手机焊脸上"],
+    ["多啦A梦","失物招领者","补水狂魔"],
+    ["思乡者","中餐续命者","婴幼儿"],
+    ["公司顶梁柱","手机焊脸上","防盗战神"],
+    ["公路之王","领航员","特种兵王","行走的攻略"],
+    ["文化震惊体","肢体语言大师","假装听懂的人","讲解器转世"],
+    ["购物狂魔","抽象艺术家","吟游诗人"],
+    ["临时起意派","鸽子成精"],
+    ["修行者","猫门信徒"],
+    ["行走的攻略","避雷针"],
+    ["避雷针","倒霉蛋","防盗战神"],
+  ];
+  var RS_SETS = RULE_SETS.map(function (a) { var s = {}; for (var i=0;i<a.length;i++) s[a[i]]=1; return s; });
+
+  // RULE_PRIORITY 由 setRulePriority(questions) 注入（覆盖反序）
+  var RULE_PRIORITY = {};
+
+  ENGINE.setRulePriority = function (questions, types) {
+    var cov = {};
+    for (var i=0;i<types.length;i++) cov[types[i]]=0;
+    for (var q=0;q<questions.length;q++){
+      var opts=questions[q].opts;
+      for (var o=0;o<opts.length;o++){
+        var w=opts[o].weights;
+        for (var k=0;k<w.length;k++){ cov[w[k][0]] += w[k][1]; }
+      }
+    }
+    var ranked = types.slice().sort(function(a,b){ return cov[a]-cov[b]; });
+    RULE_PRIORITY = {};
+    for (var i=0;i<ranked.length;i++){ RULE_PRIORITY[ranked[i]] = ranked.length - i; }
+  };
+
+  function supportOf(t) {
+    var n = 0;
+    for (var i=0;i<RS_SETS.length;i++){ if (RS_SETS[i][t]) n++; }
+    return n;
+  }
+
+  ENGINE.calcWinner = function (scores) {
+    var keys = Object.keys(scores);
+    var arr = keys.map(function(k){ return [k, scores[k]]; });
+    arr.sort(function(a,b){ return b[1]-a[1]; });
+    var top = arr[0][1];
+    var tied = arr.filter(function(e){ return e[1]===top; }).map(function(e){ return e[0]; });
+    if (tied.length === 1) return { winner: tied[0], resolvedBy: "score" };
+    var support = {};
+    for (var i=0;i<tied.length;i++){
+      var t = tied[i];
+      support[t] = supportOf(t) + (RULE_PRIORITY[t]||0)*0.001;
+    }
+    var mx = -1;
+    for (var k in support){ if (support[k]>mx) mx=support[k]; }
+    var best = tied.filter(function(t){ return Math.abs(support[t]-mx)<0.0001; });
+    if (best.length===1) return { winner: best[0], resolvedBy: "support" };
+    best.sort(function(a,b){ return (RULE_PRIORITY[b]||0)-(RULE_PRIORITY[a]||0); });
+    return { winner: best[0], resolvedBy: "support_pri" };
+  };
+
+  ENGINE.selectNext = function (questions, dims, answeredIds, excludeIds, scores, step, rng) {
+    var recentDims = [];
+    for (var i=Math.max(0,answeredIds.length-2); i<answeredIds.length; i++){
+      for (var q=0;q<questions.length;q++){
+        if (questions[q].id===answeredIds[i]){ recentDims.push(questions[q].dim); break; }
+      }
+    }
+    // 排除集用 excludeIds（所有曾展示过的题目，回退不收缩），杜绝已答/已见题目重现
+    var used = {}; for (var i=0;i<excludeIds.length;i++) used[excludeIds[i]]=1;
+    var layer = step<10 ? "core" : (step<16 ? "select" : "explore");
+    function pool(filter){
+      return questions.filter(function(q){
+        return q.layer===layer && !used[q.id] && (filter? filter(q): true);
+      });
+    }
+    var cands = pool(function(q){ return recentDims.indexOf(q.dim)===-1; });
+    if (!cands.length) cands = pool();
+    if (!cands.length) cands = questions.filter(function(q){ return !used[q.id]; });
+    if (!cands.length) return null;
+
+    if (step < 10) {
+      var coveredDims = {};
+      for (var ai=0; ai<answeredIds.length; ai++){
+        for (var aq=0; aq<questions.length; aq++){
+          if (questions[aq].id===answeredIds[ai]){ coveredDims[questions[aq].dim]=1; break; }
+        }
+      }
+      for (var d=0; d<dims.length; d++){
+        if (recentDims.indexOf(dims[d])!==-1) continue;
+        if (coveredDims[dims[d]]) continue;
+        var p = cands.filter(function(q){ return q.dim===dims[d]; });
+        if (p.length) return p[Math.floor(rng()*p.length)];
+      }
+      for (var d=0; d<dims.length; d++){
+        if (recentDims.indexOf(dims[d])!==-1) continue;
+        var p = cands.filter(function(q){ return q.dim===dims[d]; });
+        if (p.length) return p[Math.floor(rng()*p.length)];
+      }
+      return cands[Math.floor(rng()*cands.length)];
+    } else if (step < 16) {
+      var dimCnt = {};
+      for (var d=0; d<dims.length; d++) dimCnt[dims[d]]=0;
+      for (var i=0;i<answeredIds.length;i++){
+        for (var q=0;q<questions.length;q++){
+          if (questions[q].id===answeredIds[i]){ dimCnt[questions[q].dim]=(dimCnt[questions[q].dim]||0)+1; break; }
+        }
+      }
+      var order = dims.filter(function(d){ return recentDims.indexOf(d)===-1; });
+      order.sort(function(a,b){ return (dimCnt[a]||0)-(dimCnt[b]||0); });
+      for (var d=0; d<order.length; d++){
+        var p = cands.filter(function(q){ return q.dim===order[d]; });
+        if (p.length) return p[Math.floor(rng()*p.length)];
+      }
+      return cands[Math.floor(rng()*cands.length)];
+    } else {
+      var sk = Object.keys(scores).map(function(k){ return [k,scores[k]]; });
+      sk.sort(function(a,b){ return b[1]-a[1]; });
+      var top2 = [sk[0][0], sk[1]?sk[1][0]:sk[0][0]];
+      var pref = cands.filter(function(q){
+        return q.mains.some(function(m){ return top2.indexOf(m)!==-1; });
+      });
+      if (pref.length) return pref[Math.floor(rng()*pref.length)];
+      return cands[Math.floor(rng()*cands.length)];
+    }
+  };
+
+  ENGINE.applyAnswer = function (scores, q, choiceIdx) {
+    var w = q.opts[choiceIdx].weights;
+    for (var i=0;i<w.length;i++){ scores[w[i][0]] = (scores[w[i][0]]||0) + w[i][1]; }
+  };
+
+  ENGINE.shuffleOptions = function (options) {
+    var a = options.slice();
+    for (var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  };
+
+  ENGINE.matchRate = function (scores, winner, answeredQs) {
+    var mp=0, actual=scores[winner];
+    for (var i=0;i<answeredQs.length;i++){
+      var best=0, opts=answeredQs[i].opts;
+      for (var o=0;o<opts.length;o++){
+        var w=opts[o].weights;
+        for (var k=0;k<w.length;k++){ if (w[k][0]===winner && w[k][1]>best) best=w[k][1]; }
+      }
+      mp += best;
+    }
+    if (mp<=0) return 50.0;
+    var rate = actual/mp*100;
+    return Math.max(Math.round(rate*10)/10, 35.0);
+  };
+
+  // 分享链接编码
+  ENGINE.encodeShare = function (resultId, path) {
+    var s = path.map(function(p){ return p[0]+":"+p[1]; }).join(",");
+    return "#r=" + encodeURIComponent(resultId) + "&p=" + btoa(unescape(encodeURIComponent(s)));
+  };
+  ENGINE.decodeShare = function (hash) {
+    var params = new URLSearchParams(hash.replace(/^#/,""));
+    var r = params.get("r");
+    var pRaw = params.get("p");
+    var path = [];
+    if (pRaw) {
+      var s = decodeURIComponent(escape(atob(pRaw)));
+      path = s.split(",").map(function(seg){ var p=seg.split(":"); return [p[0], parseInt(p[1])]; });
+    }
+    return { resultId: r, path: path };
+  };
+
+  ENGINE.RULE_SETS = RULE_SETS;
+  return ENGINE;
+});
+
+
+if (typeof globalThis !== "undefined" && typeof globalThis.TravelBuddyEngine === "undefined" && typeof module !== "undefined" && module.exports) {
+  globalThis.TravelBuddyEngine = module.exports;
+}
+
+window.TB_DATA = {"version":"v7","types":["路痴本痴","领航员","出门困难户","倒霉蛋","出片者","打卡狂魔","纪录片导演","讲解器转世","资深剧评人","美食雷达","路边摊冒险家","中餐续命者","外卖鉴赏家","思乡者","婴幼儿","躺平仙人","罗马觉皇","时差冤魂","夜生活之王","特种兵王","精算师","小费数学家","人型汇率计算器","现金乞丐","社牛天花板","全村的希望","甜蜜连麦者","猫门信徒","多啦A梦","失物招领者","补水狂魔","防盗战神","公路之王","行走的攻略","避雷针","文化震惊体","肢体语言大师","假装听懂的人","赛博浪人","Wi-Fi搜寻者","手机焊脸上","购物狂魔","公司顶梁柱","抽象艺术家","吟游诗人","鸽子成精","修行者","临时起意派"],"dims":["启程","寻路","美食","住宿","游览","社交","花钱","意外","节奏","文化","数字","心态"],"questions":[{"id":"q001","dim":"启程","layer":"core","stem":"出发前一周，你的行李箱状态是？","mains":["领航员","出门困难户","多啦A梦","临时起意派"],"opts":[{"text":"清单已列好，每天塞一点，出发前一晚只做微调","main":"领航员","weights":[["领航员",3],["路痴本痴",2],["倒霉蛋",1]]},{"text":"空着。出发当天下午才会想起来这件事","main":"出门困难户","weights":[["出门困难户",3],["出片者",2],["打卡狂魔",1]]},{"text":"已经装了三层收纳袋，连备用充电线都备了两根","main":"多啦A梦","weights":[["多啦A梦",3],["纪录片导演",2],["讲解器转世",1]]},{"text":"装了一半，突然想换目的地又倒出来重新想","main":"临时起意派","weights":[["临时起意派",3],["资深剧评人",2],["美食雷达",1]]}]},{"id":"q002","dim":"启程","layer":"core","stem":"凌晨四点的航班，闹钟定在几点？","mains":["特种兵王","罗马觉皇","倒霉蛋","公路之王"],"opts":[{"text":"两点。提前到机场整理今天的三段行程","main":"特种兵王","weights":[["特种兵王",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"三点。踩点到机场，一分钟都不浪费在等待上","main":"罗马觉皇","weights":[["罗马觉皇",3],["外卖鉴赏家",2],["思乡者",1]]},{"text":"定了一串闹钟，结果全睡过去了","main":"倒霉蛋","weights":[["倒霉蛋",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"提前查好自驾路线，两点出发走高速最快","main":"公路之王","weights":[["公路之王",3],["时差冤魂",2],["夜生活之王",1]]}]},{"id":"q003","dim":"启程","layer":"core","stem":"做旅行攻略时你的风格是？","mains":["行走的攻略","鸽子成精","避雷针","临时起意派"],"opts":[{"text":"Excel拉好时间轴，每段衔接精确到分钟","main":"行走的攻略","weights":[["行走的攻略",3],["精算师",2],["小费数学家",1]]},{"text":"收藏了二十篇攻略，一篇都没看完","main":"鸽子成精","weights":[["鸽子成精",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"专门刷差评帖，把不能去的地方先标红","main":"避雷针","weights":[["避雷针",3],["社牛天花板",2],["全村的希望",1]]},{"text":"攻略？到了再说，手机里有离线地图就行","main":"临时起意派","weights":[["临时起意派",3],["甜蜜连麦者",2],["猫门信徒",1]]}]},{"id":"q004","dim":"启程","layer":"core","stem":"收拾行李时你的核心原则是？","mains":["多啦A梦","补水狂魔","购物狂魔","失物招领者"],"opts":[{"text":"宁多勿少，应急药包、万能转接头、针线包都带上","main":"多啦A梦","weights":[["多啦A梦",3],["防盗战神",2],["文化震惊体",1]]},{"text":"水杯、保温杯、电解质水一样不能少，精简什么都不能精简水","main":"补水狂魔","weights":[["补水狂魔",3],["肢体语言大师",2],["假装听懂的人",1]]},{"text":"箱子留一半空间，回来要装战利品","main":"购物狂魔","weights":[["购物狂魔",3],["赛博浪人",2],["Wi-Fi搜寻者",1]]},{"text":"每件东西都贴名字贴，虽然还是会丢","main":"失物招领者","weights":[["失物招领者",3],["手机焊脸上",2],["公司顶梁柱",1]]}]},{"id":"q005","dim":"启程","layer":"select","stem":"出发当天突然下暴雨，航班可能延误，你？","mains":["倒霉蛋","多啦A梦","躺平仙人","赛博浪人"],"opts":[{"text":"果然，每次出门都要出点状况","main":"倒霉蛋","weights":[["倒霉蛋",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"包里有应急零食和毛毯，延误也不慌","main":"多啦A梦","weights":[["多啦A梦",3],["修行者",2],["打卡狂魔",1]]},{"text":"延误好，候机厅椅子躺着也挺舒服","main":"躺平仙人","weights":[["躺平仙人",3],["讲解器转世",2],["美食雷达",1]]},{"text":"正好在候机厅找个角落处理几封邮件","main":"赛博浪人","weights":[["赛博浪人",3],["中餐续命者",2],["思乡者",1]]}]},{"id":"q006","dim":"启程","layer":"select","stem":"关于旅行保险，你的态度是？","mains":["精算师","防盗战神","出门困难户","猫门信徒"],"opts":[{"text":"必买，还对比了三家条款选性价比最高的","main":"精算师","weights":[["精算师",3],["夜生活之王",2],["小费数学家",1]]},{"text":"买，还额外加了行李丢失和医疗运送","main":"防盗战神","weights":[["防盗战神",3],["现金乞丐",2],["全村的希望",1]]},{"text":"随便买一个最便宜的，主要是懒得比","main":"出门困难户","weights":[["出门困难户",3],["文化震惊体",2],["假装听懂的人",1]]},{"text":"买了，主要图个安心，毕竟得平安回家撸猫","main":"猫门信徒","weights":[["猫门信徒",3],["Wi-Fi搜寻者",2],["公司顶梁柱",1]]}]},{"id":"q007","dim":"启程","layer":"select","stem":"朋友问你旅行计划，你会怎么回答？","mains":["行走的攻略","社牛天花板","吟游诗人","鸽子成精"],"opts":[{"text":"甩一份图文并茂的PDF攻略过去","main":"行走的攻略","weights":[["行走的攻略",3],["路痴本痴",2],["出片者",1]]},{"text":"约出来当面聊，顺便把对方也拉上","main":"社牛天花板","weights":[["社牛天花板",3],["打卡狂魔",2],["纪录片导演",1]]},{"text":"发一段三百字的文字，像在写散文","main":"吟游诗人","weights":[["吟游诗人",3],["资深剧评人",2],["美食雷达",1]]},{"text":"「下次一定详细说」，然后就没有然后了","main":"鸽子成精","weights":[["鸽子成精",3],["路边摊冒险家",2],["外卖鉴赏家",1]]}]},{"id":"q008","dim":"启程","layer":"select","stem":"出发前最后一晚睡不着，你在想什么？","mains":["思乡者","特种兵王","公司顶梁柱","出片者"],"opts":[{"text":"突然有点舍不得离开家","main":"思乡者","weights":[["思乡者",3],["婴幼儿",2],["时差冤魂",1]]},{"text":"盘算明天到后天到第三天的每个时间节点","main":"特种兵王","weights":[["特种兵王",3],["小费数学家",2],["人型汇率计算器",1]]},{"text":"确认明天的工作群消息有没有交接清楚","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["全村的希望",2],["甜蜜连麦者",1]]},{"text":"研究目的地的最佳拍照机位和光线时段","main":"出片者","weights":[["出片者",3],["肢体语言大师",2],["假装听懂的人",1]]}]},{"id":"q009","dim":"启程","layer":"explore","stem":"行李箱超重了，你会先拿出什么？","mains":["补水狂魔","购物狂魔","多啦A梦","失物招领者"],"opts":[{"text":"什么都行，就是不能动我的水杯和冲剂","main":"补水狂魔","weights":[["补水狂魔",3],["手机焊脸上",2],["抽象艺术家",1]]},{"text":"什么都不拿，超重费交了就是","main":"购物狂魔","weights":[["购物狂魔",3],["修行者",2],["领航员",1]]},{"text":"重新分区收纳，挤出空间一样都不落","main":"多啦A梦","weights":[["多啦A梦",3],["纪录片导演",2],["讲解器转世",1]]},{"text":"拿出什么都行，反正旅途中也会丢","main":"失物招领者","weights":[["失物招领者",3],["美食雷达",2],["中餐续命者",1]]}]},{"id":"q010","dim":"启程","layer":"explore","stem":"出发去机场的路上，你在做什么？","mains":["手机焊脸上","领航员","甜蜜连麦者","赛博浪人"],"opts":[{"text":"刷完所有社交软件的未读消息","main":"手机焊脸上","weights":[["手机焊脸上",3],["外卖鉴赏家",2],["罗马觉皇",1]]},{"text":"反复确认路线和登机口信息","main":"领航员","weights":[["领航员",3],["时差冤魂",2],["夜生活之王",1]]},{"text":"和家里人视频告别","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"开着热点处理最后一封工作邮件","main":"赛博浪人","weights":[["赛博浪人",3],["公路之王",2],["避雷针",1]]}]},{"id":"q011","dim":"启程","layer":"explore","stem":"登机后发现邻座是个话痨，你？","mains":["社牛天花板","手机焊脸上","甜蜜连麦者","猫门信徒"],"opts":[{"text":"太好了，三个小时能交个新朋友","main":"社牛天花板","weights":[["社牛天花板",3],["文化震惊体",2],["假装听懂的人",1]]},{"text":"耳机一戴，谁也不爱","main":"手机焊脸上","weights":[["手机焊脸上",3],["Wi-Fi搜寻者",2],["抽象艺术家",1]]},{"text":"跟对象发消息：救命，邻座好能聊","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["路痴本痴",2],["打卡狂魔",1]]},{"text":"聊着聊着问对方：你养猫吗？","main":"猫门信徒","weights":[["猫门信徒",3],["讲解器转世",2],["资深剧评人",1]]}]},{"id":"q012","dim":"启程","layer":"explore","stem":"关于旅行目的地的选择，你的标准是？","mains":["出片者","避雷针","美食雷达","公路之王"],"opts":[{"text":"小红书出片率高不高","main":"出片者","weights":[["出片者",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"差评少不踩雷","main":"避雷针","weights":[["避雷针",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"当地美食有没有吸引力","main":"美食雷达","weights":[["美食雷达",3],["罗马觉皇",2],["夜生活之王",1]]},{"text":"能不能自驾，沿途风景好不好","main":"公路之王","weights":[["公路之王",3],["小费数学家",2],["现金乞丐",1]]}]},{"id":"q013","dim":"寻路","layer":"core","stem":"到达陌生城市出站，第一件事是？","mains":["领航员","路痴本痴","赛博浪人","临时起意派"],"opts":[{"text":"扫一眼站牌和方位标识，心里已有路线","main":"领航员","weights":[["领航员",3],["全村的希望",2],["肢体语言大师",1]]},{"text":"打开导航原地转三圈找北","main":"路痴本痴","weights":[["路痴本痴",3],["假装听懂的人",2],["抽象艺术家",1]]},{"text":"连上车站Wi-Fi开始查路线","main":"赛博浪人","weights":[["赛博浪人",3],["吟游诗人",2],["修行者",1]]},{"text":"看哪个出口人多就跟着走","main":"临时起意派","weights":[["临时起意派",3],["打卡狂魔",2],["纪录片导演",1]]}]},{"id":"q014","dim":"寻路","layer":"core","stem":"导航提示偏离路线，你的反应是？","mains":["领航员","路痴本痴","倒霉蛋","行走的攻略"],"opts":[{"text":"关掉导航凭方向感抄近路","main":"领航员","weights":[["领航员",3],["资深剧评人",2],["中餐续命者",1]]},{"text":"很正常，这是我的日常播报","main":"路痴本痴","weights":[["路痴本痴",3],["外卖鉴赏家",2],["思乡者",1]]},{"text":"果然，好运气从不降临在我身上","main":"倒霉蛋","weights":[["倒霉蛋",3],["躺平仙人",2],["时差冤魂",1]]},{"text":"重新规划，备用路线早就查好了","main":"行走的攻略","weights":[["行走的攻略",3],["夜生活之王",2],["精算师",1]]}]},{"id":"q015","dim":"寻路","layer":"core","stem":"民宿在小巷深处找不到门牌，你会？","mains":["路痴本痴","领航员","社牛天花板","躺平仙人"],"opts":[{"text":"给房东打电话：我旁边有个绿色垃圾桶","main":"路痴本痴","weights":[["路痴本痴",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"看门牌编号规律推算，两分钟锁定","main":"领航员","weights":[["领航员",3],["防盗战神",2],["文化震惊体",1]]},{"text":"逮住路过的当地人问路顺便聊两句","main":"社牛天花板","weights":[["社牛天花板",3],["肢体语言大师",2],["Wi-Fi搜寻者",1]]},{"text":"站在巷口歇脚，等房东来接","main":"躺平仙人","weights":[["躺平仙人",3],["公司顶梁柱",2],["抽象艺术家",1]]}]},{"id":"q016","dim":"寻路","layer":"core","stem":"手机导航突然没信号了，你？","mains":["Wi-Fi搜寻者","领航员","路痴本痴","肢体语言大师"],"opts":[{"text":"满街找商店蹭Wi-Fi重新定位","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["修行者",2],["出门困难户",1]]},{"text":"不需要导航，问路人就行","main":"领航员","weights":[["领航员",3],["纪录片导演",2],["讲解器转世",1]]},{"text":"彻底慌了，开始随机选方向走","main":"路痴本痴","weights":[["路痴本痴",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"比手画脚问路，手势就是世界语","main":"肢体语言大师","weights":[["肢体语言大师",3],["思乡者",2],["婴幼儿",1]]}]},{"id":"q017","dim":"寻路","layer":"select","stem":"和朋友走散在人海里了，你？","mains":["全村的希望","社牛天花板","路痴本痴","手机焊脸上"],"opts":[{"text":"立刻找集合点，电话联系确认对方位置","main":"全村的希望","weights":[["全村的希望",3],["罗马觉皇",2],["时差冤魂",1]]},{"text":"边找人边和旁边摊贩聊上了","main":"社牛天花板","weights":[["社牛天花板",3],["特种兵王",2],["精算师",1]]},{"text":"我也迷路了，说不清自己在哪","main":"路痴本痴","weights":[["路痴本痴",3],["小费数学家",2],["现金乞丐",1]]},{"text":"狂发微信共享实时位置","main":"手机焊脸上","weights":[["手机焊脸上",3],["失物招领者",2],["补水狂魔",1]]}]},{"id":"q018","dim":"寻路","layer":"select","stem":"景点两个入口相隔三公里，你选哪个？","mains":["特种兵王","躺平仙人","避雷针","临时起意派"],"opts":[{"text":"远的那个，顺路多刷一个景点","main":"特种兵王","weights":[["特种兵王",3],["文化震惊体",2],["假装听懂的人",1]]},{"text":"近的，多走一步都是折磨","main":"躺平仙人","weights":[["躺平仙人",3],["购物狂魔",2],["抽象艺术家",1]]},{"text":"查清楚哪个入口排队短、差评少","main":"避雷针","weights":[["避雷针",3],["吟游诗人",2],["鸽子成精",1]]},{"text":"掏出硬币抛一下，正反决定走哪边","main":"临时起意派","weights":[["临时起意派",3],["出门困难户",2],["打卡狂魔",1]]}]},{"id":"q019","dim":"寻路","layer":"select","stem":"当地地铁线路图像蜘蛛网一样复杂，你？","mains":["领航员","行走的攻略","路痴本痴","假装听懂的人"],"opts":[{"text":"三分钟看懂，开始给别人指路","main":"领航员","weights":[["领航员",3],["讲解器转世",2],["资深剧评人",1]]},{"text":"提前截图存好换乘方案","main":"行走的攻略","weights":[["行走的攻略",3],["中餐续命者",2],["外卖鉴赏家",1]]},{"text":"坐反方向是基本操作","main":"路痴本痴","weights":[["路痴本痴",3],["婴幼儿",2],["时差冤魂",1]]},{"text":"跟着人流走，假装知道方向","main":"假装听懂的人","weights":[["假装听懂的人",3],["夜生活之王",2],["精算师",1]]}]},{"id":"q020","dim":"寻路","layer":"select","stem":"在异国问路，对方说了半天你完全没听懂，你？","mains":["肢体语言大师","假装听懂的人","文化震惊体","领航员"],"opts":[{"text":"用手势比划，居然聊起来了","main":"肢体语言大师","weights":[["肢体语言大师",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"微笑点头说thank you，然后继续瞎走","main":"假装听懂的人","weights":[["假装听懂的人",3],["猫门信徒",2],["补水狂魔",1]]},{"text":"被对方的热情和语速震惊到","main":"文化震惊体","weights":[["文化震惊体",3],["防盗战神",2],["公司顶梁柱",1]]},{"text":"掏出手机地图指着目的地给对方看","main":"领航员","weights":[["领航员",3],["抽象艺术家",2],["鸽子成精",1]]}]},{"id":"q021","dim":"寻路","layer":"explore","stem":"约好九点集合，八点五十你在哪？","mains":["特种兵王","出门困难户","领航员","倒霉蛋"],"opts":[{"text":"到了半小时了，周边已经逛了一圈","main":"特种兵王","weights":[["特种兵王",3],["修行者",2],["打卡狂魔",1]]},{"text":"床上。正在和时间进行最后的谈判","main":"出门困难户","weights":[["出门困难户",3],["纪录片导演",2],["资深剧评人",1]]},{"text":"准时到，顺便查好了接下来的路线","main":"领航员","weights":[["领航员",3],["美食雷达",2],["路边摊冒险家",1]]},{"text":"坐过站了，正在往回狂奔","main":"倒霉蛋","weights":[["倒霉蛋",3],["外卖鉴赏家",2],["思乡者",1]]}]},{"id":"q022","dim":"寻路","layer":"explore","stem":"走了半小时发现走反了方向，你？","mains":["猫门信徒","特种兵王","躺平仙人","路痴本痴"],"opts":[{"text":"走反了也不亏，万一这路上能碰到猫呢","main":"猫门信徒","weights":[["猫门信徒",3],["罗马觉皇",2],["时差冤魂",1]]},{"text":"没事，多走的路当热身","main":"特种兵王","weights":[["特种兵王",3],["精算师",2],["小费数学家",1]]},{"text":"找个地方坐下歇会儿再出发","main":"躺平仙人","weights":[["躺平仙人",3],["现金乞丐",2],["失物招领者",1]]},{"text":"啊？反了？我怎么看哪个方向都一样","main":"路痴本痴","weights":[["路痴本痴",3],["补水狂魔",2],["公路之王",1]]}]},{"id":"q023","dim":"寻路","layer":"explore","stem":"旅行中你最依赖的导航工具是？","mains":["领航员","行走的攻略","路痴本痴","社牛天花板"],"opts":[{"text":"方向感，导航只是辅助验证","main":"领航员","weights":[["领航员",3],["购物狂魔",2],["公司顶梁柱",1]]},{"text":"离线地图加提前规划的路线截图","main":"行走的攻略","weights":[["行走的攻略",3],["吟游诗人",2],["鸽子成精",1]]},{"text":"导航APP，没有它我哪儿也去不了","main":"路痴本痴","weights":[["路痴本痴",3],["出片者",2],["打卡狂魔",1]]},{"text":"问路人，顺便还能交朋友","main":"社牛天花板","weights":[["社牛天花板",3],["讲解器转世",2],["资深剧评人",1]]}]},{"id":"q024","dim":"寻路","layer":"explore","stem":"大巴坐过站了，下一站荒郊野外，你？","mains":["倒霉蛋","领航员","临时起意派","全村的希望"],"opts":[{"text":"经典，我的旅行永远有这种剧情","main":"倒霉蛋","weights":[["倒霉蛋",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"看返程班次时刻表，等下一班车","main":"领航员","weights":[["领航员",3],["思乡者",2],["婴幼儿",1]]},{"text":"正好，没来过的地方逛逛","main":"临时起意派","weights":[["临时起意派",3],["时差冤魂",2],["夜生活之王",1]]},{"text":"先确认同伴都下车了没，再想办法","main":"全村的希望","weights":[["全村的希望",3],["小费数学家",2],["人型汇率计算器",1]]}]},{"id":"q025","dim":"美食","layer":"core","stem":"陌生巷子里飘来一阵香味，你会？","mains":["美食雷达","路边摊冒险家","婴幼儿","行走的攻略"],"opts":[{"text":"循着味走，鼻子比导航好使","main":"美食雷达","weights":[["美食雷达",3],["甜蜜连麦者",2],["失物招领者",1]]},{"text":"直接坐下：老板来一份","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["防盗战神",2],["公路之王",1]]},{"text":"警惕地皱眉：这味道我不确定","main":"婴幼儿","weights":[["婴幼儿",3],["Wi-Fi搜寻者",2],["公司顶梁柱",1]]},{"text":"先查查这家店评分再决定","main":"行走的攻略","weights":[["行走的攻略",3],["抽象艺术家",2],["鸽子成精",1]]}]},{"id":"q026","dim":"美食","layer":"core","stem":"当地特色菜看着像黑暗料理，你？","mains":["路边摊冒险家","中餐续命者","文化震惊体","小费数学家"],"opts":[{"text":"闭眼先来一口，越怪越要试","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["修行者",2],["打卡狂魔",1]]},{"text":"旁边有中餐馆吗？我想吃炒饭","main":"中餐续命者","weights":[["中餐续命者",3],["纪录片导演",2],["资深剧评人",1]]},{"text":"被这道菜的颜值震惊，先拍照","main":"文化震惊体","weights":[["文化震惊体",3],["外卖鉴赏家",2],["罗马觉皇",1]]},{"text":"看看价格加小费总共多少，再决定","main":"小费数学家","weights":[["小费数学家",3],["夜生活之王",2],["精算师",1]]}]},{"id":"q027","dim":"美食","layer":"core","stem":"出国第五天，你最想念的是？","mains":["中餐续命者","思乡者","美食雷达","外卖鉴赏家"],"opts":[{"text":"火锅、烧烤、麻辣烫，随便来一个","main":"中餐续命者","weights":[["中餐续命者",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"妈妈做的菜，什么都不如它","main":"思乡者","weights":[["思乡者",3],["补水狂魔",2],["失物招领者",1]]},{"text":"想念？我还在吃当地招牌呢","main":"美食雷达","weights":[["美食雷达",3],["公路之王",2],["避雷针",1]]},{"text":"想念打开手机点外卖的快乐","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["购物狂魔",2],["公司顶梁柱",1]]}]},{"id":"q028","dim":"美食","layer":"core","stem":"深夜在酒店饿了，你会？","mains":["外卖鉴赏家","中餐续命者","美食雷达","夜生活之王"],"opts":[{"text":"熟练打开当地外卖软件比价","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["吟游诗人",2],["鸽子成精",1]]},{"text":"翻出包里的泡面，烧水壶启动","main":"中餐续命者","weights":[["中餐续命者",3],["补水狂魔",2],["出片者",1]]},{"text":"出门扫街，深夜食堂才是精髓","main":"美食雷达","weights":[["美食雷达",3],["讲解器转世",2],["资深剧评人",1]]},{"text":"正好，去夜市边吃边逛","main":"夜生活之王","weights":[["夜生活之王",3],["罗马觉皇",2],["时差冤魂",1]]}]},{"id":"q029","dim":"美食","layer":"select","stem":"一群人点菜时你的角色是？","mains":["美食雷达","精算师","社牛天花板","婴幼儿"],"opts":[{"text":"报菜名那个，招牌菜了如指掌","main":"美食雷达","weights":[["美食雷达",3],["现金乞丐",2],["甜蜜连麦者",1]]},{"text":"控制人均预算，荤素搭配","main":"精算师","weights":[["精算师",3],["补水狂魔",2],["防盗战神",1]]},{"text":"跟服务员聊起来了，加了三道隐藏菜单","main":"社牛天花板","weights":[["社牛天花板",3],["避雷针",2],["赛博浪人",1]]},{"text":"我只想要一份白米饭","main":"婴幼儿","weights":[["婴幼儿",3],["Wi-Fi搜寻者",2],["公司顶梁柱",1]]}]},{"id":"q030","dim":"美食","layer":"select","stem":"路边摊和米其林只能选一个？","mains":["路边摊冒险家","美食雷达","外卖鉴赏家","资深剧评人"],"opts":[{"text":"路边摊！锅气是米其林的盲区","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["抽象艺术家",2],["鸽子成精",1]]},{"text":"都要，我的胃有分时复用功能","main":"美食雷达","weights":[["美食雷达",3],["修行者",2],["出门困难户",1]]},{"text":"米其林打包回酒店躺着吃","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["打卡狂魔",2],["纪录片导演",1]]},{"text":"米其林，路边摊的出品不够稳定","main":"资深剧评人","weights":[["资深剧评人",3],["时差冤魂",2],["人型汇率计算器",1]]}]},{"id":"q031","dim":"美食","layer":"select","stem":"同伴提议今晚继续吃火锅（第七顿了），你？","mains":["中餐续命者","美食雷达","婴幼儿","思乡者"],"opts":[{"text":"可以！火锅是精神支柱","main":"中餐续命者","weights":[["中餐续命者",3],["全村的希望",2],["甜蜜连麦者",1]]},{"text":"换一家吧，这条街还有宝藏店","main":"美食雷达","weights":[["美食雷达",3],["猫门信徒",2],["多啦A梦",1]]},{"text":"我的胃在抗议了，能不能吃点清淡的","main":"婴幼儿","weights":[["婴幼儿",3],["失物招领者",2],["防盗战神",1]]},{"text":"吃着吃着突然更想家里的味道了","main":"思乡者","weights":[["思乡者",3],["公路之王",2],["赛博浪人",1]]}]},{"id":"q032","dim":"美食","layer":"select","stem":"食物端上桌你的第一件事是？","mains":["出片者","美食雷达","路边摊冒险家","外卖鉴赏家"],"opts":[{"text":"找角度拍照，光线必须到位","main":"出片者","weights":[["出片者",3],["购物狂魔",2],["公司顶梁柱",1]]},{"text":"闻一下，判断这家店的水准","main":"美食雷达","weights":[["美食雷达",3],["吟游诗人",2],["鸽子成精",1]]},{"text":"趁热直接下筷子","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["出门困难户",2],["纪录片导演",1]]},{"text":"拍完照准备写点评","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["讲解器转世",2],["罗马觉皇",1]]}]},{"id":"q033","dim":"美食","layer":"explore","stem":"在当地超市看到一瓶老干妈，你？","mains":["中餐续命者","思乡者","美食雷达","人型汇率计算器"],"opts":[{"text":"眼泪快下来了，立刻拿下","main":"中餐续命者","weights":[["中餐续命者",3],["现金乞丐",2],["甜蜜连麦者",1]]},{"text":"拍照发给妈妈：我想家了","main":"思乡者","weights":[["思乡者",3],["多啦A梦",2],["补水狂魔",1]]},{"text":"顺便研究当地调味品货架","main":"美食雷达","weights":[["美食雷达",3],["防盗战神",2],["避雷针",1]]},{"text":"瞬间换算成人民币，比国内便宜就买","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["肢体语言大师",2],["假装听懂的人",1]]}]},{"id":"q034","dim":"美食","layer":"explore","stem":"你最不能接受的旅行餐饮状况是？","mains":["中餐续命者","婴幼儿","现金乞丐","美食雷达"],"opts":[{"text":"连续三天没有一口中餐","main":"中餐续命者","weights":[["中餐续命者",3],["赛博浪人",2],["Wi-Fi搜寻者",1]]},{"text":"所有菜都是辣的或生的","main":"婴幼儿","weights":[["婴幼儿",3],["补水狂魔",2],["手机焊脸上",1]]},{"text":"钱包空了，没钱吃才是最不能接受的","main":"现金乞丐","weights":[["现金乞丐",3],["抽象艺术家",2],["鸽子成精",1]]},{"text":"吃到网红店但味道很一般","main":"美食雷达","weights":[["美食雷达",3],["修行者",2],["打卡狂魔",1]]}]},{"id":"q035","dim":"美食","layer":"explore","stem":"旅途中遇到一家排长队的本地小店，你？","mains":["美食雷达","特种兵王","失物招领者","鸽子成精"],"opts":[{"text":"排！本地人排队的一定有道理","main":"美食雷达","weights":[["美食雷达",3],["纪录片导演",2],["罗马觉皇",1]]},{"text":"排着排着把附近景点也逛了","main":"特种兵王","weights":[["特种兵王",3],["时差冤魂",2],["精算师",1]]},{"text":"排队时把包翻了个遍，差点丢手机","main":"失物招领者","weights":[["失物招领者",3],["小费数学家",2],["全村的希望",1]]},{"text":"排队？我先撤了，下次再说","main":"鸽子成精","weights":[["鸽子成精",3],["甜蜜连麦者",2],["猫门信徒",1]]}]},{"id":"q036","dim":"美食","layer":"explore","stem":"关于旅途中吃饭的态度，你是？","mains":["美食雷达","路边摊冒险家","外卖鉴赏家","社牛天花板"],"opts":[{"text":"吃是旅行主线，其他都是支线","main":"美食雷达","weights":[["美食雷达",3],["补水狂魔",2],["公路之王",1]]},{"text":"随便找个路边摊对付一口，越local越好","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["避雷针",2],["文化震惊体",1]]},{"text":"能点外卖就不出门，酒店最舒服","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["假装听懂的人",2],["Wi-Fi搜寻者",1]]},{"text":"饭桌是最好的社交场，拼桌也行","main":"社牛天花板","weights":[["社牛天花板",3],["购物狂魔",2],["公司顶梁柱",1]]}]},{"id":"q037","dim":"住宿","layer":"core","stem":"选住宿时你最看重什么？","mains":["出片者","防盗战神","躺平仙人","行走的攻略"],"opts":[{"text":"窗户朝向和光线，出片是刚需","main":"出片者","weights":[["出片者",3],["吟游诗人",2],["出门困难户",1]]},{"text":"安保好不好，门锁结不结实","main":"防盗战神","weights":[["防盗战神",3],["打卡狂魔",2],["讲解器转世",1]]},{"text":"床够大够软，其他都好说","main":"躺平仙人","weights":[["躺平仙人",3],["资深剧评人",2],["罗马觉皇",1]]},{"text":"位置，离交通枢纽和景点近","main":"行走的攻略","weights":[["行走的攻略",3],["夜生活之王",2],["精算师",1]]}]},{"id":"q038","dim":"住宿","layer":"core","stem":"行程第三天早上的真实状态是？","mains":["特种兵王","罗马觉皇","时差冤魂","出门困难户"],"opts":[{"text":"六点已出发，今天要刷五个景点","main":"特种兵王","weights":[["特种兵王",3],["全村的希望",2],["猫门信徒",1]]},{"text":"睡到自然醒，自然醒是十一点","main":"罗马觉皇","weights":[["罗马觉皇",3],["多啦A梦",2],["公路之王",1]]},{"text":"凌晨四点就醒了，瞪着天花板","main":"时差冤魂","weights":[["时差冤魂",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"闹钟响了五次，人和床还在纠缠","main":"出门困难户","weights":[["出门困难户",3],["赛博浪人",2],["Wi-Fi搜寻者",1]]}]},{"id":"q039","dim":"住宿","layer":"core","stem":"酒店床太舒服了，景点还去吗？","mains":["躺平仙人","特种兵王","出片者","罗马觉皇"],"opts":[{"text":"床就是景点，我在这里深度游","main":"躺平仙人","weights":[["躺平仙人",3],["手机焊脸上",2],["公司顶梁柱",1]]},{"text":"床再舒服行程也不能改","main":"特种兵王","weights":[["特种兵王",3],["抽象艺术家",2],["修行者",1]]},{"text":"景点有出片机会，不能错过","main":"出片者","weights":[["出片者",3],["临时起意派",2],["倒霉蛋",1]]},{"text":"再睡一会，景点又不会跑","main":"罗马觉皇","weights":[["罗马觉皇",3],["纪录片导演",2],["讲解器转世",1]]}]},{"id":"q040","dim":"住宿","layer":"core","stem":"进酒店房间你第一件事是？","mains":["防盗战神","出片者","补水狂魔","赛博浪人"],"opts":[{"text":"检查门窗锁、猫眼、逃生通道","main":"防盗战神","weights":[["防盗战神",3],["精算师",2],["小费数学家",1]]},{"text":"拉开窗帘看光线和窗外景观","main":"出片者","weights":[["出片者",3],["人型汇率计算器",2],["甜蜜连麦者",1]]},{"text":"找水壶和饮水机位置","main":"补水狂魔","weights":[["补水狂魔",3],["猫门信徒",2],["公路之王",1]]},{"text":"测Wi-Fi速度，不行就开热点","main":"赛博浪人","weights":[["赛博浪人",3],["避雷针",2],["肢体语言大师",1]]}]},{"id":"q041","dim":"住宿","layer":"select","stem":"下午两点自由活动，你大概率在？","mains":["躺平仙人","出片者","赛博浪人","夜生活之王"],"opts":[{"text":"酒店大堂沙发，葛优瘫","main":"躺平仙人","weights":[["躺平仙人",3],["假装听懂的人",2],["Wi-Fi搜寻者",1]]},{"text":"趁着光线好出去拍照","main":"出片者","weights":[["出片者",3],["购物狂魔",2],["公司顶梁柱",1]]},{"text":"回房插上电处理几封邮件","main":"赛博浪人","weights":[["赛博浪人",3],["吟游诗人",2],["修行者",1]]},{"text":"补觉，为今晚的夜生活蓄力","main":"夜生活之王","weights":[["夜生活之王",3],["倒霉蛋",2],["打卡狂魔",1]]}]},{"id":"q042","dim":"住宿","layer":"select","stem":"别人六点起床看日出，你的想法是？","mains":["特种兵王","罗马觉皇","时差冤魂","躺平仙人"],"opts":[{"text":"五点半就到了，还占了最佳机位","main":"特种兵王","weights":[["特种兵王",3],["讲解器转世",2],["资深剧评人",1]]},{"text":"早起毁一天，坚决不去","main":"罗马觉皇","weights":[["罗马觉皇",3],["小费数学家",2],["全村的希望",1]]},{"text":"我四点就醒了，正好顺路","main":"时差冤魂","weights":[["时差冤魂",3],["甜蜜连麦者",2],["多啦A梦",1]]},{"text":"日出视频网上有的是","main":"躺平仙人","weights":[["躺平仙人",3],["失物招领者",2],["公路之王",1]]}]},{"id":"q043","dim":"住宿","layer":"select","stem":"青旅还是星级酒店，你怎么选？","mains":["社牛天花板","外卖鉴赏家","躺平仙人","赛博浪人"],"opts":[{"text":"青旅！公共区域是交友天堂","main":"社牛天花板","weights":[["社牛天花板",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"能不能点到好吃的外卖","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"星级酒店，床品决定一切","main":"躺平仙人","weights":[["躺平仙人",3],["公司顶梁柱",2],["抽象艺术家",1]]},{"text":"有稳定Wi-Fi和书桌就行","main":"赛博浪人","weights":[["赛博浪人",3],["鸽子成精",2],["修行者",1]]}]},{"id":"q044","dim":"住宿","layer":"select","stem":"室友打呼噜震天响，你？","mains":["时差冤魂","罗马觉皇","全村的希望","倒霉蛋"],"opts":[{"text":"反正也睡不着，戴上耳机听白噪音","main":"时差冤魂","weights":[["时差冤魂",3],["临时起意派",2],["打卡狂魔",1]]},{"text":"能睡着，我的睡眠质量铁打的","main":"罗马觉皇","weights":[["罗马觉皇",3],["纪录片导演",2],["资深剧评人",1]]},{"text":"轻轻推一下对方，换个姿势就好","main":"全村的希望","weights":[["全村的希望",3],["精算师",2],["人型汇率计算器",1]]},{"text":"每次都分到打呼噜的室友","main":"倒霉蛋","weights":[["倒霉蛋",3],["现金乞丐",2],["猫门信徒",1]]}]},{"id":"q045","dim":"住宿","layer":"explore","stem":"酒店早餐自助你拿的第一样是？","mains":["讲解器转世","中餐续命者","特种兵王","补水狂魔"],"opts":[{"text":"先看早餐区介绍牌，这酒店的早餐有来头","main":"讲解器转世","weights":[["讲解器转世",3],["多啦A梦",2],["公路之王",1]]},{"text":"粥和咸菜，还是中国胃最踏实","main":"中餐续命者","weights":[["中餐续命者",3],["避雷针",2],["肢体语言大师",1]]},{"text":"拿两个面包一杯咖啡，三分钟解决战斗","main":"特种兵王","weights":[["特种兵王",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"先倒一大杯温水","main":"补水狂魔","weights":[["补水狂魔",3],["购物狂魔",2],["抽象艺术家",1]]}]},{"id":"q046","dim":"住宿","layer":"explore","stem":"关于倒时差，你的方法是？","mains":["时差冤魂","纪录片导演","路边摊冒险家","赛博浪人"],"opts":[{"text":"没有方法，硬熬到周期对上","main":"时差冤魂","weights":[["时差冤魂",3],["吟游诗人",2],["修行者",1]]},{"text":"睡不着就爬起来整理拍摄素材，时差正好用来剪片","main":"纪录片导演","weights":[["纪录片导演",3],["出门困难户",2],["打卡狂魔",1]]},{"text":"不管时差，落地先冲夜市吃饱，吃饱了自然睡得着","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["资深剧评人",2],["小费数学家",1]]},{"text":"管它什么时差，按工作时间走","main":"赛博浪人","weights":[["赛博浪人",3],["人型汇率计算器",2],["甜蜜连麦者",1]]}]},{"id":"q047","dim":"住宿","layer":"explore","stem":"退房时你通常会？","mains":["失物招领者","多啦A梦","特种兵王","罗马觉皇"],"opts":[{"text":"翻遍每个角落，已经丢了三样东西","main":"失物招领者","weights":[["失物招领者",3],["猫门信徒",2],["公路之王",1]]},{"text":"按清单清点，所有装备归位","main":"多啦A梦","weights":[["多啦A梦",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"提前半小时退，赶下一站","main":"特种兵王","weights":[["特种兵王",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"踩着退房最后期限冲下来","main":"罗马觉皇","weights":[["罗马觉皇",3],["公司顶梁柱",2],["抽象艺术家",1]]}]},{"id":"q048","dim":"住宿","layer":"explore","stem":"住民宿时房东热情邀你喝茶聊天，你？","mains":["社牛天花板","文化震惊体","甜蜜连麦者","行走的攻略"],"opts":[{"text":"太好了，顺便打听本地人才知道的玩法","main":"社牛天花板","weights":[["社牛天花板",3],["鸽子成精",2],["修行者",1]]},{"text":"被这种热情震撼到，不知所措","main":"文化震惊体","weights":[["文化震惊体",3],["临时起意派",2],["打卡狂魔",1]]},{"text":"客气两句，回去跟对象视频了","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["思乡者",2],["夜生活之王",1]]},{"text":"正好，把房东的推荐记进行程","main":"行走的攻略","weights":[["行走的攻略",3],["精算师",2],["小费数学家",1]]}]},{"id":"q049","dim":"游览","layer":"core","stem":"看到绝美日落，你的第一反应是？","mains":["出片者","纪录片导演","打卡狂魔","修行者"],"opts":[{"text":"手机已举起，构图调光一气呵成","main":"出片者","weights":[["出片者",3],["现金乞丐",2],["公路之王",1]]},{"text":"别动！这光线能拍出电影感","main":"纪录片导演","weights":[["纪录片导演",3],["避雷针",2],["肢体语言大师",1]]},{"text":"快！趁没人赶紧合影打卡","main":"打卡狂魔","weights":[["打卡狂魔",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"放下手机静静看，这刻属于眼睛","main":"修行者","weights":[["修行者",3],["购物狂魔",2],["抽象艺术家",1]]}]},{"id":"q050","dim":"游览","layer":"core","stem":"在博物馆里你停留最久的地方是？","mains":["讲解器转世","出片者","资深剧评人","打卡狂魔"],"opts":[{"text":"逐字听完每个编号的讲解","main":"讲解器转世","weights":[["讲解器转世",3],["吟游诗人",2],["出门困难户",1]]},{"text":"人最少光最好的那个展厅","main":"出片者","weights":[["出片者",3],["夜生活之王",2],["小费数学家",1]]},{"text":"看完会想「这策展逻辑不太行」","main":"资深剧评人","weights":[["资深剧评人",3],["人型汇率计算器",2],["全村的希望",1]]},{"text":"镇馆之宝前拍完就走","main":"打卡狂魔","weights":[["打卡狂魔",3],["猫门信徒",2],["防盗战神",1]]}]},{"id":"q051","dim":"游览","layer":"core","stem":"网红景点排长队拍照，你会？","mains":["打卡狂魔","避雷针","出片者","临时起意派"],"opts":[{"text":"排！来都来了，队再长也要打卡","main":"打卡狂魔","weights":[["打卡狂魔",3],["公路之王",2],["肢体语言大师",1]]},{"text":"不排，这景点过誉了，三分","main":"避雷针","weights":[["避雷针",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"绕到侧面找冷门机位效果更好","main":"出片者","weights":[["出片者",3],["公司顶梁柱",2],["抽象艺术家",1]]},{"text":"排了五分钟烦了，转身去旁边巷子","main":"临时起意派","weights":[["临时起意派",3],["鸽子成精",2],["出门困难户",1]]}]},{"id":"q052","dim":"游览","layer":"core","stem":"景点解说牌你一般会？","mains":["讲解器转世","资深剧评人","打卡狂魔","时差冤魂"],"opts":[{"text":"逐字读完，还能补充牌上没有的","main":"讲解器转世","weights":[["讲解器转世",3],["倒霉蛋",2],["思乡者",1]]},{"text":"扫一眼挑文案的毛病","main":"资深剧评人","weights":[["资深剧评人",3],["婴幼儿",2],["精算师",1]]},{"text":"拍下来回去看，但从来不会看","main":"打卡狂魔","weights":[["打卡狂魔",3],["小费数学家",2],["现金乞丐",1]]},{"text":"凌晨醒着没事，提前把每块解说牌都读完了","main":"时差冤魂","weights":[["时差冤魂",3],["全村的希望",2],["失物招领者",1]]}]},{"id":"q053","dim":"游览","layer":"select","stem":"旅行中遇到一个没有任何攻略提及的小村庄，你？","mains":["临时起意派","行走的攻略","纪录片导演","避雷针"],"opts":[{"text":"拐进去！未知才有惊喜","main":"临时起意派","weights":[["临时起意派",3],["补水狂魔",2],["防盗战神",1]]},{"text":"先查查安全不安全再决定","main":"行走的攻略","weights":[["行走的攻略",3],["肢体语言大师",2],["假装听懂的人",1]]},{"text":"太好了，这才是好素材","main":"纪录片导演","weights":[["纪录片导演",3],["手机焊脸上",2],["购物狂魔",1]]},{"text":"没攻略的地方风险大，绕开","main":"避雷针","weights":[["避雷针",3],["抽象艺术家",2],["吟游诗人",1]]}]},{"id":"q054","dim":"游览","layer":"select","stem":"同伴说「帮我拍一张」，你的内心是？","mains":["出片者","打卡狂魔","资深剧评人","纪录片导演"],"opts":[{"text":"来了！蹲下找角度的那种认真","main":"出片者","weights":[["出片者",3],["出门困难户",2],["思乡者",1]]},{"text":"十连拍，总有一张能用","main":"打卡狂魔","weights":[["打卡狂魔",3],["夜生活之王",2],["精算师",1]]},{"text":"拍完好心指出：你刚才站姿不对","main":"资深剧评人","weights":[["资深剧评人",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"帮拍，顺便录一段视频素材回去剪","main":"纪录片导演","weights":[["纪录片导演",3],["甜蜜连麦者",2],["猫门信徒",1]]}]},{"id":"q055","dim":"游览","layer":"select","stem":"面对一个需要爬三小时山才能到的景点，你？","mains":["特种兵王","躺平仙人","出门困难户","出片者"],"opts":[{"text":"走！顺便沿途多刷几个打卡点","main":"特种兵王","weights":[["特种兵王",3],["多啦A梦",2],["失物招领者",1]]},{"text":"山脚下等你们，找个咖啡馆坐着","main":"躺平仙人","weights":[["躺平仙人",3],["防盗战神",2],["公路之王",1]]},{"text":"三小时？我在山脚咖啡馆等你们回来","main":"出门困难户","weights":[["出门困难户",3],["假装听懂的人",2],["Wi-Fi搜寻者",1]]},{"text":"先查山顶的光线几度最好再出发","main":"出片者","weights":[["出片者",3],["购物狂魔",2],["公司顶梁柱",1]]}]},{"id":"q056","dim":"游览","layer":"select","stem":"游览古镇时你的节奏是？","mains":["打卡狂魔","吟游诗人","讲解器转世","购物狂魔"],"opts":[{"text":"拿着清单逐个扫，效率优先","main":"打卡狂魔","weights":[["打卡狂魔",3],["鸽子成精",2],["修行者",1]]},{"text":"走走停停，有灵感就掏手机记下来","main":"吟游诗人","weights":[["吟游诗人",3],["倒霉蛋",2],["思乡者",1]]},{"text":"每到一处先查这地方的历史","main":"讲解器转世","weights":[["讲解器转世",3],["婴幼儿",2],["精算师",1]]},{"text":"古镇商铺才是重点，逛起来","main":"购物狂魔","weights":[["购物狂魔",3],["小费数学家",2],["现金乞丐",1]]}]},{"id":"q057","dim":"游览","layer":"explore","stem":"你觉得旅途中哪个瞬间最值得记住？","mains":["思乡者","吟游诗人","修行者","社牛天花板"],"opts":[{"text":"看到一家人出游的画面就想家了","main":"思乡者","weights":[["思乡者",3],["全村的希望",2],["猫门信徒",1]]},{"text":"某个突然有倾诉欲的安静傍晚","main":"吟游诗人","weights":[["吟游诗人",3],["失物招领者",2],["补水狂魔",1]]},{"text":"什么都不想、完全放空的片刻","main":"修行者","weights":[["修行者",3],["公路之王",2],["文化震惊体",1]]},{"text":"和陌生人聊到忘我的那个下午","main":"社牛天花板","weights":[["社牛天花板",3],["肢体语言大师",2],["Wi-Fi搜寻者",1]]}]},{"id":"q058","dim":"游览","layer":"explore","stem":"面对人山人海的热门景点，你的策略是？","mains":["防盗战神","路边摊冒险家","躺平仙人","猫门信徒"],"opts":[{"text":"景点人多，防盗等级提到最高","main":"防盗战神","weights":[["防盗战神",3],["手机焊脸上",2],["公司顶梁柱",1]]},{"text":"跟摊主聊上了，问出三家隐藏好店","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["抽象艺术家",2],["夜生活之王",1]]},{"text":"找个角落坐着看人潮也挺好","main":"躺平仙人","weights":[["躺平仙人",3],["精算师",2],["人型汇率计算器",1]]},{"text":"人多就不挤了，我蹲在角落等景点的流浪猫出现","main":"猫门信徒","weights":[["猫门信徒",3],["现金乞丐",2],["甜蜜连麦者",1]]}]},{"id":"q059","dim":"游览","layer":"explore","stem":"旅行结束你的手机相册是？","mains":["猫门信徒","打卡狂魔","纪录片导演","讲解器转世"],"opts":[{"text":"三分之一的照片是各地猫猫，每只都有名字","main":"猫门信徒","weights":[["猫门信徒",3],["多啦A梦",2],["补水狂魔",1]]},{"text":"按景点分好文件夹，一个不落","main":"打卡狂魔","weights":[["打卡狂魔",3],["文化震惊体",2],["假装听懂的人",1]]},{"text":"视频素材比照片多，硬盘告急","main":"纪录片导演","weights":[["纪录片导演",3],["Wi-Fi搜寻者",2],["公司顶梁柱",1]]},{"text":"每个展品的前世今生我都了解","main":"讲解器转世","weights":[["讲解器转世",3],["鸽子成精",2],["倒霉蛋",1]]}]},{"id":"q060","dim":"游览","layer":"explore","stem":"导游正在讲解，但内容你已经知道，你？","mains":["讲解器转世","资深剧评人","手机焊脸上","社牛天花板"],"opts":[{"text":"继续听，还能补充导游没说的","main":"讲解器转世","weights":[["讲解器转世",3],["婴幼儿",2],["夜生活之王",1]]},{"text":"心里默默给导游打分：表述逻辑6分","main":"资深剧评人","weights":[["资深剧评人",3],["小费数学家",2],["人型汇率计算器",1]]},{"text":"趁机刷手机等下一站","main":"手机焊脸上","weights":[["手机焊脸上",3],["全村的希望",2],["甜蜜连麦者",1]]},{"text":"跟导游搭话，变成互动式讲解","main":"社牛天花板","weights":[["社牛天花板",3],["失物招领者",2],["补水狂魔",1]]}]},{"id":"q061","dim":"社交","layer":"core","stem":"青旅公共休息区，你会？","mains":["社牛天花板","甜蜜连麦者","猫门信徒","全村的希望"],"opts":[{"text":"十分钟后和全场加上了微信","main":"社牛天花板","weights":[["社牛天花板",3],["公路之王",2],["肢体语言大师",1]]},{"text":"找个角落跟对象视频去了","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["假装听懂的人",2],["公司顶梁柱",1]]},{"text":"直奔趴在沙发上的那只猫","main":"猫门信徒","weights":[["猫门信徒",3],["抽象艺术家",2],["倒霉蛋",1]]},{"text":"默默观察，谁有困难就帮一把","main":"全村的希望","weights":[["全村的希望",3],["夜生活之王",2],["精算师",1]]}]},{"id":"q062","dim":"社交","layer":"core","stem":"路上偶遇一个热情的当地人邀请你一起玩，你？","mains":["赛博浪人","全村的希望","文化震惊体","防盗战神"],"opts":[{"text":"找个有Wi-Fi的角落处理工作消息","main":"赛博浪人","weights":[["赛博浪人",3],["人型汇率计算器",2],["现金乞丐",1]]},{"text":"热情回应，顺便安利自己的行程","main":"全村的希望","weights":[["全村的希望",3],["多啦A梦",2],["补水狂魔",1]]},{"text":"被这种热情震撼到，半推半就","main":"文化震惊体","weights":[["文化震惊体",3],["行走的攻略",2],["肢体语言大师",1]]},{"text":"客气婉拒，心里盘算安全风险","main":"防盗战神","weights":[["防盗战神",3],["Wi-Fi搜寻者",2],["公司顶梁柱",1]]}]},{"id":"q063","dim":"社交","layer":"core","stem":"一个人吃饭时你会？","mains":["甜蜜连麦者","猫门信徒","手机焊脸上","外卖鉴赏家"],"opts":[{"text":"边吃边和对象视频，绝不孤单","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["鸽子成精",2],["修行者",1]]},{"text":"看看这家店有没有店猫，没有就换一家","main":"猫门信徒","weights":[["猫门信徒",3],["临时起意派",2],["出门困难户",1]]},{"text":"左手筷子右手手机，刷到天荒地老","main":"手机焊脸上","weights":[["手机焊脸上",3],["倒霉蛋",2],["思乡者",1]]},{"text":"点外卖回房间吃，安静又舒服","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["婴幼儿",2],["精算师",1]]}]},{"id":"q064","dim":"社交","layer":"core","stem":"旅行中关于和家里联系，你是？","mains":["甜蜜连麦者","全村的希望","思乡者","赛博浪人"],"opts":[{"text":"一天三通视频，重要时刻实时转播","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["小费数学家",2],["现金乞丐",1]]},{"text":"给家里报平安那一通就够了","main":"全村的希望","weights":[["全村的希望",3],["失物招领者",2],["补水狂魔",1]]},{"text":"主动打，聊着聊着就想家了","main":"思乡者","weights":[["思乡者",3],["公路之王",2],["避雷针",1]]},{"text":"工作消息都回不过来，家里的事往后排","main":"赛博浪人","weights":[["赛博浪人",3],["肢体语言大师",2],["假装听懂的人",1]]}]},{"id":"q065","dim":"社交","layer":"select","stem":"拼车拼团时你的角色是？","mains":["全村的希望","猫门信徒","人型汇率计算器","鸽子成精"],"opts":[{"text":"张罗行程当团长，照顾所有人","main":"全村的希望","weights":[["全村的希望",3],["购物狂魔",2],["公司顶梁柱",1]]},{"text":"只关心中途休息站有没有猫可以撸","main":"猫门信徒","weights":[["猫门信徒",3],["抽象艺术家",2],["修行者",1]]},{"text":"实时换算费用，AA精确到分","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["出门困难户",2],["夜生活之王",1]]},{"text":"报了名，出发前突然想取消","main":"鸽子成精","weights":[["鸽子成精",3],["精算师",2],["现金乞丐",1]]}]},{"id":"q066","dim":"社交","layer":"select","stem":"同伴和陌生人聊得火热，你？","mains":["猫门信徒","甜蜜连麦者","全村的希望","婴幼儿"],"opts":[{"text":"偷偷溜去找路边晒太阳的猫玩","main":"猫门信徒","weights":[["猫门信徒",3],["多啦A梦",2],["补水狂魔",1]]},{"text":"退到一旁给对象发消息直播","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["行走的攻略",2],["避雷针",1]]},{"text":"帮忙翻译或搭话，做后勤","main":"全村的希望","weights":[["全村的希望",3],["假装听懂的人",2],["Wi-Fi搜寻者",1]]},{"text":"人太多了我想躲在角落","main":"婴幼儿","weights":[["婴幼儿",3],["公司顶梁柱",2],["吟游诗人",1]]}]},{"id":"q067","dim":"社交","layer":"select","stem":"当地人邀请你去家里做客，你？","mains":["猫门信徒","文化震惊体","全村的希望","小费数学家"],"opts":[{"text":"去！一进门先问：你家养猫吗？","main":"猫门信徒","weights":[["猫门信徒",3],["修行者",2],["临时起意派",1]]},{"text":"震撼，没想到旅行还能这样","main":"文化震惊体","weights":[["文化震惊体",3],["路痴本痴",2],["倒霉蛋",1]]},{"text":"客随主便，准备点小礼物","main":"全村的希望","weights":[["全村的希望",3],["夜生活之王",2],["现金乞丐",1]]},{"text":"先算算该带多少价值的礼物合适","main":"小费数学家","weights":[["小费数学家",3],["失物招领者",2],["补水狂魔",1]]}]},{"id":"q068","dim":"社交","layer":"select","stem":"群里发了旅行美照，你？","mains":["补水狂魔","甜蜜连麦者","Wi-Fi搜寻者","吟游诗人"],"opts":[{"text":"发完朋友圈，泡杯热茶慢慢回味这趟旅程","main":"补水狂魔","weights":[["补水狂魔",3],["公路之王",2],["避雷针",1]]},{"text":"@对象说「下次带你来」","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["肢体语言大师",2],["购物狂魔",1]]},{"text":"社交需要网络先找信号","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["抽象艺术家",2],["临时起意派",1]]},{"text":"配了一段像诗一样的文字","main":"吟游诗人","weights":[["吟游诗人",3],["出门困难户",2],["倒霉蛋",1]]}]},{"id":"q069","dim":"社交","layer":"explore","stem":"旅行中认识的新朋友，你会？","mains":["补水狂魔","全村的希望","鸽子成精","公司顶梁柱"],"opts":[{"text":"加了微信，约好下次一起去探店喝茶","main":"补水狂魔","weights":[["补水狂魔",3],["中餐续命者",2],["罗马觉皇",1]]},{"text":"保持联系，有需要互相帮忙","main":"全村的希望","weights":[["全村的希望",3],["时差冤魂",2],["精算师",1]]},{"text":"加了微信，聊几句就断了","main":"鸽子成精","weights":[["鸽子成精",3],["现金乞丐",2],["多啦A梦",1]]},{"text":"如果工作上有合作空间就保持联系","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["防盗战神",2],["行走的攻略",1]]}]},{"id":"q070","dim":"社交","layer":"explore","stem":"旅伴之间产生分歧了，你通常是？","mains":["全村的希望","肢体语言大师","鸽子成精","补水狂魔"],"opts":[{"text":"主动调解，团队和谐最重要","main":"全村的希望","weights":[["全村的希望",3],["避雷针",2],["假装听懂的人",1]]},{"text":"用手势和表情化解，不伤和气","main":"肢体语言大师","weights":[["肢体语言大师",3],["购物狂魔",2],["修行者",1]]},{"text":"分歧太麻烦，要不我自己玩","main":"鸽子成精","weights":[["鸽子成精",3],["临时起意派",2],["路痴本痴",1]]},{"text":"递瓶水给双方，先降降温再聊","main":"补水狂魔","weights":[["补水狂魔",3],["倒霉蛋",2],["路边摊冒险家",1]]}]},{"id":"q071","dim":"社交","layer":"explore","stem":"在异国遇到说中文的同胞，你？","mains":["补水狂魔","思乡者","行走的攻略","赛博浪人"],"opts":[{"text":"激动得先喝口水平复一下，再上去搭话","main":"补水狂魔","weights":[["补水狂魔",3],["罗马觉皇",2],["夜生活之王",1]]},{"text":"突然觉得特别亲切，有点想哭","main":"思乡者","weights":[["思乡者",3],["精算师",2],["人型汇率计算器",1]]},{"text":"正好交流一下当地的踩坑经验","main":"行走的攻略","weights":[["行走的攻略",3],["多啦A梦",2],["失物招领者",1]]},{"text":"礼貌打个招呼，各忙各的","main":"赛博浪人","weights":[["赛博浪人",3],["公路之王",2],["假装听懂的人",1]]}]},{"id":"q072","dim":"社交","layer":"explore","stem":"关于旅伴数量，你的理想是？","mains":["婴幼儿","修行者","全村的希望","甜蜜连麦者"],"opts":[{"text":"人太多了，我想躲在角落","main":"婴幼儿","weights":[["婴幼儿",3],["手机焊脸上",2],["抽象艺术家",1]]},{"text":"独自一人最好，自在","main":"修行者","weights":[["修行者",3],["路痴本痴",2],["出门困难户",1]]},{"text":"三到四人，刚好能互相照应","main":"全村的希望","weights":[["全村的希望",3],["资深剧评人",2],["路边摊冒险家",1]]},{"text":"两个人，我和对象就够了","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["中餐续命者",2],["外卖鉴赏家",1]]}]},{"id":"q073","dim":"花钱","layer":"core","stem":"看到标价100当地货币，你脑中？","mains":["人型汇率计算器","小费数学家","现金乞丐","购物狂魔"],"opts":[{"text":"瞬间换算成人民币，零点几秒出答案","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["时差冤魂",2],["夜生活之王",1]]},{"text":"加上小费总共多少，心里有数","main":"小费数学家","weights":[["小费数学家",3],["失物招领者",2],["防盗战神",1]]},{"text":"心跳加速，默默查最近的ATM在哪","main":"现金乞丐","weights":[["现金乞丐",3],["避雷针",2],["文化震惊体",1]]},{"text":"不管了，先买再说","main":"购物狂魔","weights":[["购物狂魔",3],["假装听懂的人",2],["Wi-Fi搜寻者",1]]}]},{"id":"q074","dim":"花钱","layer":"core","stem":"当地市场砍价时你的风格是？","mains":["精算师","现金乞丐","小费数学家","婴幼儿"],"opts":[{"text":"先调研行情，再精准报价","main":"精算师","weights":[["精算师",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"不会砍，怕对方不喜欢我","main":"现金乞丐","weights":[["现金乞丐",3],["临时起意派",2],["领航员",1]]},{"text":"砍完价顺便问能不能抹个零","main":"小费数学家","weights":[["小费数学家",3],["出门困难户",2],["倒霉蛋",1]]},{"text":"不好意思开口砍，怯生生问一句能便宜点吗","main":"婴幼儿","weights":[["婴幼儿",3],["路边摊冒险家",2],["外卖鉴赏家",1]]}]},{"id":"q075","dim":"花钱","layer":"core","stem":"免税店购物你的策略是？","mains":["购物狂魔","人型汇率计算器","猫门信徒","鸽子成精"],"opts":[{"text":"看中就买，退税额算个大概就行","main":"购物狂魔","weights":[["购物狂魔",3],["罗马觉皇",2],["夜生活之王",1]]},{"text":"算清楚哪种支付方式汇率最优","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["多啦A梦",2],["防盗战神",1]]},{"text":"逛了一圈，最后买了堆进口猫零食带回去","main":"猫门信徒","weights":[["猫门信徒",3],["公路之王",2],["文化震惊体",1]]},{"text":"逛了一圈，什么都没买就走了","main":"鸽子成精","weights":[["鸽子成精",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]}]},{"id":"q076","dim":"花钱","layer":"core","stem":"旅行预算超支了，你的反应？","mains":["购物狂魔","精算师","现金乞丐","小费数学家"],"opts":[{"text":"超就超了，千金难买心头好","main":"购物狂魔","weights":[["购物狂魔",3],["公司顶梁柱",2],["吟游诗人",1]]},{"text":"立刻调整后续预算，砍掉非必要支出","main":"精算师","weights":[["精算师",3],["路痴本痴",2],["领航员",1]]},{"text":"意料之中，钱总是不够花","main":"现金乞丐","weights":[["现金乞丐",3],["倒霉蛋",2],["纪录片导演",1]]},{"text":"砍掉小费支出，能省一点是一点","main":"小费数学家","weights":[["小费数学家",3],["资深剧评人",2],["中餐续命者",1]]}]},{"id":"q077","dim":"花钱","layer":"select","stem":"AA结账时有人少付了，你会？","mains":["精算师","小费数学家","现金乞丐","甜蜜连麦者"],"opts":[{"text":"默默重算，精确到角","main":"精算师","weights":[["精算师",3],["外卖鉴赏家",2],["思乡者",1]]},{"text":"差的那点当小费算了，不伤和气","main":"小费数学家","weights":[["小费数学家",3],["时差冤魂",2],["夜生活之王",1]]},{"text":"我才是少付的那个，不好意思","main":"现金乞丐","weights":[["现金乞丐",3],["失物招领者",2],["防盗战神",1]]},{"text":"立刻发消息跟对象吐槽这件事","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["行走的攻略",2],["避雷针",1]]}]},{"id":"q078","dim":"花钱","layer":"select","stem":"关于旅行预算，你是？","mains":["精算师","现金乞丐","购物狂魔","行走的攻略"],"opts":[{"text":"Excel拉好，分类预算实时跟踪","main":"精算师","weights":[["精算师",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"预算？有多少花多少","main":"现金乞丐","weights":[["现金乞丐",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"大头留给购物，其他能省则省","main":"购物狂魔","weights":[["购物狂魔",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"参考攻略的推荐花费，灵活调整","main":"行走的攻略","weights":[["行走的攻略",3],["修行者",2],["临时起意派",1]]}]},{"id":"q079","dim":"花钱","layer":"select","stem":"同伴买了个超贵的纪念品，你？","mains":["精算师","购物狂魔","现金乞丐","资深剧评人"],"opts":[{"text":"替他算了下性价比，有点心疼","main":"精算师","weights":[["精算师",3],["领航员",2],["出门困难户",1]]},{"text":"羡慕，也想买一个","main":"购物狂魔","weights":[["购物狂魔",3],["纪录片导演",2],["路边摊冒险家",1]]},{"text":"我连钱都没带够","main":"现金乞丐","weights":[["现金乞丐",3],["中餐续命者",2],["思乡者",1]]},{"text":"这做工，不值这个价","main":"资深剧评人","weights":[["资深剧评人",3],["罗马觉皇",2],["夜生活之王",1]]}]},{"id":"q080","dim":"花钱","layer":"select","stem":"ATM突然取不出钱的那一刻，你？","mains":["现金乞丐","精算师","多啦A梦","倒霉蛋"],"opts":[{"text":"啊，熟悉的心跳，又来了","main":"现金乞丐","weights":[["现金乞丐",3],["防盗战神",2],["公路之王",1]]},{"text":"早有预案：备用卡和线下现金","main":"精算师","weights":[["精算师",3],["避雷针",2],["肢体语言大师",1]]},{"text":"包里有应急现金，不怕","main":"多啦A梦","weights":[["多啦A梦",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"果然，什么倒霉事都让我碰上","main":"倒霉蛋","weights":[["倒霉蛋",3],["公司顶梁柱",2],["吟游诗人",1]]}]},{"id":"q081","dim":"花钱","layer":"explore","stem":"汇率波动对你旅行的影响是？","mains":["人型汇率计算器","现金乞丐","时差冤魂","购物狂魔"],"opts":[{"text":"实时盯盘，择优兑换","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["临时起意派",2],["路痴本痴",1]]},{"text":"没感觉，反正钱总是不够","main":"现金乞丐","weights":[["现金乞丐",3],["出门困难户",2],["讲解器转世",1]]},{"text":"汇率一波动更睡不着了，本来时差就够我熬的","main":"时差冤魂","weights":[["时差冤魂",3],["路边摊冒险家",2],["外卖鉴赏家",1]]},{"text":"汇率好就多买点，不好就少买点","main":"购物狂魔","weights":[["购物狂魔",3],["思乡者",2],["躺平仙人",1]]}]},{"id":"q082","dim":"花钱","layer":"explore","stem":"遇到只收现金的小店但你没现金，你？","mains":["现金乞丐","精算师","失物招领者","婴幼儿"],"opts":[{"text":"尴尬地跟老板说稍等我跑趟ATM","main":"现金乞丐","weights":[["现金乞丐",3],["夜生活之王",2],["公路之王",1]]},{"text":"附近找ATM取钱再回来","main":"精算师","weights":[["精算师",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"先翻翻包里有没有零钱","main":"失物招领者","weights":[["失物招领者",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"急得快哭了，早知道就带够现金了嘛","main":"婴幼儿","weights":[["婴幼儿",3],["抽象艺术家",2],["吟游诗人",1]]}]},{"id":"q083","dim":"花钱","layer":"explore","stem":"旅行结束对账时，你是？","mains":["精算师","人型汇率计算器","现金乞丐","购物狂魔"],"opts":[{"text":"每笔都对得上，差额在五块以内","main":"精算师","weights":[["精算师",3],["修行者",2],["路痴本痴",1]]},{"text":"按当时汇率逐笔还原","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["领航员",2],["纪录片导演",1]]},{"text":"对账？钱已经花完了不用对","main":"现金乞丐","weights":[["现金乞丐",3],["讲解器转世",2],["中餐续命者",1]]},{"text":"购物那栏有点不好意思看","main":"购物狂魔","weights":[["购物狂魔",3],["外卖鉴赏家",2],["躺平仙人",1]]}]},{"id":"q084","dim":"花钱","layer":"explore","stem":"关于小费文化，你的态度是？","mains":["小费数学家","夜生活之王","现金乞丐","人型汇率计算器"],"opts":[{"text":"按当地惯例算得明明白白","main":"小费数学家","weights":[["小费数学家",3],["罗马觉皇",2],["特种兵王",1]]},{"text":"给！服务生推荐的夜场准没错，小费当情报费","main":"夜生活之王","weights":[["夜生活之王",3],["社牛天花板",2],["防盗战神",1]]},{"text":"想给但钱包里只剩卡了","main":"现金乞丐","weights":[["现金乞丐",3],["公路之王",2],["避雷针",1]]},{"text":"换算成人民币看看给多少合理","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["肢体语言大师",2],["赛博浪人",1]]}]},{"id":"q085","dim":"意外","layer":"core","stem":"航班突然取消，你？","mains":["倒霉蛋","精算师","赛博浪人","婴幼儿"],"opts":[{"text":"接受现实，这种事就是冲我来的","main":"倒霉蛋","weights":[["倒霉蛋",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"立刻查备选航班，延误险也买好了","main":"精算师","weights":[["精算师",3],["公司顶梁柱",2],["吟游诗人",1]]},{"text":"找个角落插上电，正好处理积压工作","main":"赛博浪人","weights":[["赛博浪人",3],["临时起意派",2],["路痴本痴",1]]},{"text":"吓死了，要找妈妈","main":"婴幼儿","weights":[["婴幼儿",3],["出门困难户",2],["纪录片导演",1]]}]},{"id":"q086","dim":"意外","layer":"core","stem":"旅行途中突降暴雨，行程全乱了，你？","mains":["领航员","躺平仙人","倒霉蛋","临时起意派"],"opts":[{"text":"秒切室内备选路线，雨停再续","main":"领航员","weights":[["领航员",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"狂喜，终于可以回酒店躺着了","main":"躺平仙人","weights":[["躺平仙人",3],["思乡者",2],["特种兵王",1]]},{"text":"果然，好天气从不属于我","main":"倒霉蛋","weights":[["倒霉蛋",3],["多啦A梦",2],["防盗战神",1]]},{"text":"雨天有雨天的玩法，换个方向","main":"临时起意派","weights":[["临时起意派",3],["避雷针",2],["文化震惊体",1]]}]},{"id":"q087","dim":"意外","layer":"core","stem":"行李箱被航空公司弄丢了，你？","mains":["倒霉蛋","多啦A梦","精算师","失物招领者"],"opts":[{"text":"就知道，这种事逃不掉","main":"倒霉蛋","weights":[["倒霉蛋",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"没关系，随身包里有应急物资","main":"多啦A梦","weights":[["多啦A梦",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"立刻理赔登记，保留所有凭证","main":"精算师","weights":[["精算师",3],["修行者",2],["路痴本痴",1]]},{"text":"完了，我的东西全在那个箱子里","main":"失物招领者","weights":[["失物招领者",3],["纪录片导演",2],["讲解器转世",1]]}]},{"id":"q088","dim":"意外","layer":"core","stem":"同伴在景点突然身体不适，你？","mains":["甜蜜连麦者","多啦A梦","路痴本痴","赛博浪人"],"opts":[{"text":"第一时间视频连线懂医的朋友远程问诊","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["资深剧评人",2],["中餐续命者",1]]},{"text":"掏出随身药包，常备药都有","main":"多啦A梦","weights":[["多啦A梦",3],["外卖鉴赏家",2],["罗马觉皇",1]]},{"text":"想去找药店，结果自己也走丢了","main":"路痴本痴","weights":[["路痴本痴",3],["时差冤魂",2],["特种兵王",1]]},{"text":"让其他人陪他，我继续行程","main":"赛博浪人","weights":[["赛博浪人",3],["社牛天花板",2],["防盗战神",1]]}]},{"id":"q089","dim":"意外","layer":"select","stem":"护照找不到了，你？","mains":["失物招领者","倒霉蛋","多啦A梦","小费数学家"],"opts":[{"text":"开始翻每个口袋和包的每个夹层","main":"失物招领者","weights":[["失物招领者",3],["公路之王",2],["行走的攻略",1]]},{"text":"完了完了，这次真的回不去了","main":"倒霉蛋","weights":[["倒霉蛋",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"我有电子备份和复印件在另一层","main":"多啦A梦","weights":[["多啦A梦",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"一边翻一边心算补办工本费和加急费到底要多少","main":"小费数学家","weights":[["小费数学家",3],["公司顶梁柱",2],["吟游诗人",1]]}]},{"id":"q090","dim":"意外","layer":"select","stem":"民宿和图片差距巨大，你？","mains":["资深剧评人","猫门信徒","罗马觉皇","临时起意派"],"opts":[{"text":"这跟图片差了十万八千里，差评","main":"资深剧评人","weights":[["资深剧评人",3],["出门困难户",2],["讲解器转世",1]]},{"text":"落差太大，只能安慰自己：附近说不定有猫","main":"猫门信徒","weights":[["猫门信徒",3],["路边摊冒险家",2],["中餐续命者",1]]},{"text":"管它像不像图，先睡一觉，醒了再理论","main":"罗马觉皇","weights":[["罗马觉皇",3],["思乡者",2],["特种兵王",1]]},{"text":"换个地方住，当冒险了","main":"临时起意派","weights":[["临时起意派",3],["防盗战神",2],["行走的攻略",1]]}]},{"id":"q091","dim":"意外","layer":"select","stem":"信用卡在境外被冻结了，你？","mains":["路痴本痴","资深剧评人","路边摊冒险家","倒霉蛋"],"opts":[{"text":"急着想去找附近银行，结果先把自己走丢了","main":"路痴本痴","weights":[["路痴本痴",3],["避雷针",2],["肢体语言大师",1]]},{"text":"这出『境外冻结』的戏码我给6分，套路太老","main":"资深剧评人","weights":[["资深剧评人",3],["假装听懂的人",2],["手机焊脸上",1]]},{"text":"正好，刷不了卡就掏现金钻路边摊，更local","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"果然，这种事从来不放过我","main":"倒霉蛋","weights":[["倒霉蛋",3],["鸽子成精",2],["修行者",1]]}]},{"id":"q092","dim":"意外","layer":"select","stem":"同伴突然发脾气说不玩了要回酒店，你？","mains":["路痴本痴","避雷针","鸽子成精","外卖鉴赏家"],"opts":[{"text":"答应一起回去，结果带对方绕了三圈才找到路","main":"路痴本痴","weights":[["路痴本痴",3],["打卡狂魔",2],["纪录片导演",1]]},{"text":"默默查这个景点的差评，果然早就有人吐槽了","main":"避雷针","weights":[["避雷针",3],["讲解器转世",2],["中餐续命者",1]]},{"text":"正好，我也想回去了","main":"鸽子成精","weights":[["鸽子成精",3],["躺平仙人",2],["时差冤魂",1]]},{"text":"回酒店点外卖，大家分开冷静一下","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["夜生活之王",2],["特种兵王",1]]}]},{"id":"q093","dim":"意外","layer":"explore","stem":"手机突然黑屏开不了机，你？","mains":["手机焊脸上","多啦A梦","夜生活之王","失物招领者"],"opts":[{"text":"天塌了，我的整个世界都在里面","main":"手机焊脸上","weights":[["手机焊脸上",3],["社牛天花板",2],["公路之王",1]]},{"text":"充电宝和备用机都在包里","main":"多啦A梦","weights":[["多啦A梦",3],["行走的攻略",2],["文化震惊体",1]]},{"text":"出事了？先看今晚还能不能出去玩","main":"夜生活之王","weights":[["夜生活之王",3],["肢体语言大师",2],["Wi-Fi搜寻者",1]]},{"text":"完了，黑屏不算，我连备用机都翻不出来","main":"失物招领者","weights":[["失物招领者",3],["公司顶梁柱",2],["吟游诗人",1]]}]},{"id":"q094","dim":"意外","layer":"explore","stem":"在异国迷路且手机没电了，你？","mains":["多啦A梦","肢体语言大师","时差冤魂","避雷针"],"opts":[{"text":"出事了从包里翻出应急工具","main":"多啦A梦","weights":[["多啦A梦",3],["修行者",2],["领航员",1]]},{"text":"比手画脚问路人，手势走天下","main":"肢体语言大师","weights":[["肢体语言大师",3],["出门困难户",2],["出片者",1]]},{"text":"反正时差让我凌晨就醒，正好趁清醒想办法","main":"时差冤魂","weights":[["时差冤魂",3],["纪录片导演",2],["美食雷达",1]]},{"text":"出发前就该下载离线地图，果然踩雷了","main":"避雷针","weights":[["避雷针",3],["中餐续命者",2],["思乡者",1]]}]},{"id":"q095","dim":"意外","layer":"explore","stem":"钱包被偷了，你？","mains":["防盗战神","时差冤魂","假装听懂的人","Wi-Fi搜寻者"],"opts":[{"text":"不可能，我腰包拉链朝内贴身揣着","main":"防盗战神","weights":[["防盗战神",3],["特种兵王",2],["补水狂魔",1]]},{"text":"完了，本来就因为时差睡不好，这下更睡不着了","main":"时差冤魂","weights":[["时差冤魂",3],["公路之王",2],["文化震惊体",1]]},{"text":"出了什么事没太搞懂但配合","main":"假装听懂的人","weights":[["假装听懂的人",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"先找附近商场WiFi连上，挂失银行卡也得有网","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["领航员",2],["出片者",1]]}]},{"id":"q096","dim":"意外","layer":"explore","stem":"景点临时关闭了，白跑一趟，你？","mains":["避雷针","临时起意派","思乡者","打卡狂魔"],"opts":[{"text":"早说了要提前查开放时间","main":"避雷针","weights":[["避雷针",3],["讲解器转世",2],["美食雷达",1]]},{"text":"附近逛逛，也许有意外收获","main":"临时起意派","weights":[["临时起意派",3],["躺平仙人",2],["罗马觉皇",1]]},{"text":"出事了一肚子委屈只想回家","main":"思乡者","weights":[["思乡者",3],["社牛天花板",2],["补水狂魔",1]]},{"text":"意外状况也要拍照打卡","main":"打卡狂魔","weights":[["打卡狂魔",3],["行走的攻略",2],["文化震惊体",1]]}]},{"id":"q097","dim":"节奏","layer":"core","stem":"一天安排几个景点你觉得合理？","mains":["思乡者","罗马觉皇","行走的攻略","临时起意派"],"opts":[{"text":"一两个就够了，多了想家，留点时间跟家里视频","main":"思乡者","weights":[["思乡者",3],["公司顶梁柱",2],["吟游诗人",1]]},{"text":"旅行从中午开始上午是睡觉时间","main":"罗马觉皇","weights":[["罗马觉皇",3],["修行者",2],["出门困难户",1]]},{"text":"看路线最优，三到四个刚好","main":"行走的攻略","weights":[["行走的攻略",3],["出片者",2],["纪录片导演",1]]},{"text":"看心情，到了再说","main":"临时起意派","weights":[["临时起意派",3],["美食雷达",2],["中餐续命者",1]]}]},{"id":"q098","dim":"节奏","layer":"core","stem":"晚上十点同伴说累了想回酒店，你会？","mains":["夜生活之王","思乡者","公路之王","Wi-Fi搜寻者"],"opts":[{"text":"夜才刚开始，走带你去个地方","main":"夜生活之王","weights":[["夜生活之王",3],["外卖鉴赏家",2],["婴幼儿",1]]},{"text":"正好，回酒店跟家里视频聊聊天","main":"思乡者","weights":[["思乡者",3],["补水狂魔",2],["特种兵王",1]]},{"text":"正好，我开车送你回去，顺路兜个风","main":"公路之王","weights":[["公路之王",3],["文化震惊体",2],["赛博浪人",1]]},{"text":"正好，酒店WiFi比景点快多了，回去刷剧","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["手机焊脸上",2],["抽象艺术家",1]]}]},{"id":"q099","dim":"节奏","layer":"core","stem":"两天一夜的周末游你的节奏是？","mains":["中餐续命者","夜生活之王","失物招领者","临时起意派"],"opts":[{"text":"先查好目的地附近的中餐馆，再倒推行程节奏","main":"中餐续命者","weights":[["中餐续命者",3],["吟游诗人",2],["领航员",1]]},{"text":"白天睡觉晚上出动","main":"夜生活之王","weights":[["夜生活之王",3],["出门困难户",2],["纪录片导演",1]]},{"text":"走一路掉一路东西，节奏全花在回头找东西上","main":"失物招领者","weights":[["失物招领者",3],["讲解器转世",2],["路边摊冒险家",1]]},{"text":"随机切换，走到哪算哪","main":"临时起意派","weights":[["临时起意派",3],["婴幼儿",2],["躺平仙人",1]]}]},{"id":"q100","dim":"节奏","layer":"core","stem":"旅行微信步数你的目标是？","mains":["中餐续命者","避雷针","手机焊脸上","公路之王"],"opts":[{"text":"走到哪吃到哪，步数随缘，饭点必须准时","main":"中餐续命者","weights":[["中餐续命者",3],["补水狂魔",2],["社牛天花板",1]]},{"text":"查过攻略，每天三个景点是性价比最高的节奏","main":"避雷针","weights":[["避雷针",3],["防盗战神",2],["假装听懂的人",1]]},{"text":"不重要，有网就行","main":"手机焊脸上","weights":[["手机焊脸上",3],["赛博浪人",2],["公司顶梁柱",1]]},{"text":"步数不重要，能开车到的绝不用走","main":"公路之王","weights":[["公路之王",3],["抽象艺术家",2],["鸽子成精",1]]}]},{"id":"q101","dim":"节奏","layer":"select","stem":"听说山顶日出绝美但要四点出发，你？","mains":["中餐续命者","夜生活之王","时差冤魂","公路之王"],"opts":[{"text":"四点出发？那早饭怎么解决，山上有没有热粥","main":"中餐续命者","weights":[["中餐续命者",3],["修行者",2],["领航员",1]]},{"text":"不去了，那个点我正准备睡","main":"夜生活之王","weights":[["夜生活之王",3],["出片者",2],["打卡狂魔",1]]},{"text":"四点？我反正也醒着，正好","main":"时差冤魂","weights":[["时差冤魂",3],["纪录片导演",2],["美食雷达",1]]},{"text":"开车上山最省力，盘山公路本身就是风景","main":"公路之王","weights":[["公路之王",3],["路边摊冒险家",2],["外卖鉴赏家",1]]}]},{"id":"q102","dim":"节奏","layer":"select","stem":"长途车程四小时你怎么度过？","mains":["公路之王","罗马觉皇","夜生活之王","吟游诗人"],"opts":[{"text":"享受窗外的公路风景","main":"公路之王","weights":[["公路之王",3],["躺平仙人",2],["特种兵王",1]]},{"text":"全程睡，落地精神抖擞","main":"罗马觉皇","weights":[["罗马觉皇",3],["补水狂魔",2],["文化震惊体",1]]},{"text":"全程补觉，把精力留给今晚的夜场","main":"夜生活之王","weights":[["夜生活之王",3],["肢体语言大师",2],["假装听懂的人",1]]},{"text":"看着窗外写东西","main":"吟游诗人","weights":[["吟游诗人",3],["公司顶梁柱",2],["鸽子成精",1]]}]},{"id":"q103","dim":"节奏","layer":"select","stem":"「来都来了」这四个字对你有用吗？","mains":["时差冤魂","避雷针","出门困难户","鸽子成精"],"opts":[{"text":"时差让我凌晨就醒，来都来了正好多看几个","main":"时差冤魂","weights":[["时差冤魂",3],["领航员",2],["打卡狂魔",1]]},{"text":"没用，来都来了也不去烂景点，查过差评了","main":"避雷针","weights":[["避雷针",3],["讲解器转世",2],["资深剧评人",1]]},{"text":"来都来了，但能不能少去几个地方","main":"出门困难户","weights":[["出门困难户",3],["美食雷达",2],["外卖鉴赏家",1]]},{"text":"有用，来都来了不如回去","main":"鸽子成精","weights":[["鸽子成精",3],["婴幼儿",2],["特种兵王",1]]}]},{"id":"q104","dim":"节奏","layer":"select","stem":"假期最后一天你通常在做什么？","mains":["时差冤魂","补水狂魔","购物狂魔","公司顶梁柱"],"opts":[{"text":"时差没倒过来，天没亮就醒了，干脆去逛逛","main":"时差冤魂","weights":[["时差冤魂",3],["人型汇率计算器",2],["社牛天花板",1]]},{"text":"最后一天慢慢逛，保温杯灌满边走边喝","main":"补水狂魔","weights":[["补水狂魔",3],["防盗战神",2],["文化震惊体",1]]},{"text":"最后冲刺免税店","main":"购物狂魔","weights":[["购物狂魔",3],["假装听懂的人",2],["赛博浪人",1]]},{"text":"开始处理积压的工作消息","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["抽象艺术家",2],["修行者",1]]}]},{"id":"q105","dim":"节奏","layer":"explore","stem":"你觉得理想的旅行节奏是？","mains":["修行者","时差冤魂","失物招领者","防盗战神"],"opts":[{"text":"慢，把一个地方待透","main":"修行者","weights":[["修行者",3],["出片者",2],["打卡狂魔",1]]},{"text":"跟着生物钟走，凌晨醒就凌晨出发，困了就睡","main":"时差冤魂","weights":[["时差冤魂",3],["纪录片导演",2],["资深剧评人",1]]},{"text":"慢慢走，走太快容易丢东西","main":"失物招领者","weights":[["失物招领者",3],["路边摊冒险家",2],["外卖鉴赏家",1]]},{"text":"节奏可以慢，但防盗意识一刻不能松","main":"防盗战神","weights":[["防盗战神",3],["躺平仙人",2],["特种兵王",1]]}]},{"id":"q106","dim":"节奏","layer":"explore","stem":"同伴体力不支了但行程还有一半，你会？","mains":["罗马觉皇","人型汇率计算器","补水狂魔","出门困难户"],"opts":[{"text":"正好，找个地方一起躺着，反正我也不想动了","main":"罗马觉皇","weights":[["罗马觉皇",3],["社牛天花板",2],["行走的攻略",1]]},{"text":"算一下打车回去和继续走哪个更划算","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["文化震惊体",2],["肢体语言大师",1]]},{"text":"先递瓶水，补充体力再决定走不走","main":"补水狂魔","weights":[["补水狂魔",3],["赛博浪人",2],["Wi-Fi搜寻者",1]]},{"text":"正好，我早就想歇了，一起回吧","main":"出门困难户","weights":[["出门困难户",3],["路痴本痴",2],["领航员",1]]}]},{"id":"q107","dim":"节奏","layer":"explore","stem":"凌晨的红眼航班，你的态度是？","mains":["罗马觉皇","夜生活之王","补水狂魔","公路之王"],"opts":[{"text":"上飞机就睡，落地刚好自然醒","main":"罗马觉皇","weights":[["罗马觉皇",3],["打卡狂魔",2],["讲解器转世",1]]},{"text":"正好前夜玩到三点直接去机场","main":"夜生活之王","weights":[["夜生活之王",3],["资深剧评人",2],["美食雷达",1]]},{"text":"机舱太干了，登机前先灌满保温杯","main":"补水狂魔","weights":[["补水狂魔",3],["外卖鉴赏家",2],["婴幼儿",1]]},{"text":"红眼航班省一晚住宿，落地直接提车自驾","main":"公路之王","weights":[["公路之王",3],["特种兵王",2],["行走的攻略",1]]}]},{"id":"q108","dim":"节奏","layer":"explore","stem":"行程表对你的意义是？","mains":["失物招领者","防盗战神","鸽子成精","公司顶梁柱"],"opts":[{"text":"行程表？我连钱包都看不住，哪有空看那个","main":"失物招领者","weights":[["失物招领者",3],["肢体语言大师",2],["假装听懂的人",1]]},{"text":"行程表上标注好每个地点的安全等级","main":"防盗战神","weights":[["防盗战神",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"用来鸽掉的那张表","main":"鸽子成精","weights":[["鸽子成精",3],["抽象艺术家",2],["吟游诗人",1]]},{"text":"像项目排期一样精确管理","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["领航员",2],["出片者",1]]}]},{"id":"q109","dim":"文化","layer":"core","stem":"当地习俗和你完全不同，你的反应？","mains":["文化震惊体","肢体语言大师","假装听懂的人","罗马觉皇"],"opts":[{"text":"震撼，原地陷入文化冲击三秒","main":"文化震惊体","weights":[["文化震惊体",3],["纪录片导演",2],["讲解器转世",1]]},{"text":"比手画脚融入，用行动表示尊重","main":"肢体语言大师","weights":[["肢体语言大师",3],["美食雷达",2],["路边摊冒险家",1]]},{"text":"微笑点头，假装我懂了","main":"假装听懂的人","weights":[["假装听懂的人",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"先睡饱再说，精神足了才能好好体验这些不同","main":"罗马觉皇","weights":[["罗马觉皇",3],["小费数学家",2],["社牛天花板",1]]}]},{"id":"q110","dim":"文化","layer":"core","stem":"语言不通要点餐，你会？","mains":["肢体语言大师","假装听懂的人","文化震惊体","失物招领者"],"opts":[{"text":"指手画脚加画画，搞定","main":"肢体语言大师","weights":[["肢体语言大师",3],["甜蜜连麦者",2],["行走的攻略",1]]},{"text":"指着邻桌说：要那个","main":"假装听懂的人","weights":[["假装听懂的人",3],["赛博浪人",2],["手机焊脸上",1]]},{"text":"被菜单震惊，随便点一个试试","main":"文化震惊体","weights":[["文化震惊体",3],["吟游诗人",2],["路痴本痴",1]]},{"text":"学完当地话回去就忘了怎么说","main":"失物招领者","weights":[["失物招领者",3],["出片者",2],["打卡狂魔",1]]}]},{"id":"q111","dim":"文化","layer":"core","stem":"当地人热情说了一长串你听不懂的话，你？","mains":["假装听懂的人","肢体语言大师","文化震惊体","手机焊脸上"],"opts":[{"text":"全程微笑点头附和","main":"假装听懂的人","weights":[["假装听懂的人",3],["讲解器转世",2],["资深剧评人",1]]},{"text":"用肢体接话，聊得热火朝天","main":"肢体语言大师","weights":[["肢体语言大师",3],["路边摊冒险家",2],["外卖鉴赏家",1]]},{"text":"震惊于这种热情，不知所措","main":"文化震惊体","weights":[["文化震惊体",3],["躺平仙人",2],["特种兵王",1]]},{"text":"赶紧掏翻译APP","main":"手机焊脸上","weights":[["手机焊脸上",3],["社牛天花板",2],["猫门信徒",1]]}]},{"id":"q112","dim":"文化","layer":"core","stem":"走进寺庙或教堂，你会？","mains":["假装听懂的人","文化震惊体","讲解器转世","修行者"],"opts":[{"text":"跟着别人做，不会出错","main":"假装听懂的人","weights":[["假装听懂的人",3],["行走的攻略",2],["Wi-Fi搜寻者",1]]},{"text":"被肃穆氛围震撼到不敢动","main":"文化震惊体","weights":[["文化震惊体",3],["抽象艺术家",2],["路痴本痴",1]]},{"text":"逐字读介绍牌了解历史","main":"讲解器转世","weights":[["讲解器转世",3],["领航员",2],["打卡狂魔",1]]},{"text":"静静感受这份庄严","main":"修行者","weights":[["修行者",3],["纪录片导演",2],["资深剧评人",1]]}]},{"id":"q113","dim":"文化","layer":"select","stem":"同伴当众做了失礼举动，你？","mains":["肢体语言大师","假装听懂的人","文化震惊体","人型汇率计算器"],"opts":[{"text":"立刻用肢体动作补救","main":"肢体语言大师","weights":[["肢体语言大师",3],["美食雷达",2],["外卖鉴赏家",1]]},{"text":"装作没看见，默默移开视线","main":"假装听懂的人","weights":[["假装听懂的人",3],["思乡者",2],["婴幼儿",1]]},{"text":"替他尴尬到脚趾抠地","main":"文化震惊体","weights":[["文化震惊体",3],["特种兵王",2],["小费数学家",1]]},{"text":"默默算一下这个失礼会不会影响接下来要付的小费","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["甜蜜连麦者",2],["猫门信徒",1]]}]},{"id":"q114","dim":"文化","layer":"select","stem":"被邀请参加当地传统节日，你？","mains":["文化震惊体","肢体语言大师","纪录片导演","修行者"],"opts":[{"text":"震撼值拉满，全程懵着乐","main":"文化震惊体","weights":[["文化震惊体",3],["赛博浪人",2],["Wi-Fi搜寻者",1]]},{"text":"跟着跳，动作不对也快乐","main":"肢体语言大师","weights":[["肢体语言大师",3],["吟游诗人",2],["路痴本痴",1]]},{"text":"全程录像，这是绝佳素材","main":"纪录片导演","weights":[["纪录片导演",3],["出门困难户",2],["出片者",1]]},{"text":"融入其中，感受不同文化","main":"修行者","weights":[["修行者",3],["打卡狂魔",2],["资深剧评人",1]]}]},{"id":"q115","dim":"文化","layer":"select","stem":"看不懂菜单时你的策略？","mains":["假装听懂的人","肢体语言大师","文化震惊体","抽象艺术家"],"opts":[{"text":"指一个价格中等的，听天由命","main":"假装听懂的人","weights":[["假装听懂的人",3],["路边摊冒险家",2],["外卖鉴赏家",1]]},{"text":"比划食材让服务员确认","main":"肢体语言大师","weights":[["肢体语言大师",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"被菜单的画风震惊，先拍照","main":"文化震惊体","weights":[["文化震惊体",3],["小费数学家",2],["社牛天花板",1]]},{"text":"看图猜，哪个摆盘最有美感就点哪个","main":"抽象艺术家","weights":[["抽象艺术家",3],["猫门信徒",2],["行走的攻略",1]]}]},{"id":"q116","dim":"文化","layer":"select","stem":"关于学当地语言，你会？","mains":["肢体语言大师","假装听懂的人","中餐续命者","避雷针"],"opts":[{"text":"学动作和口音，立马上手","main":"肢体语言大师","weights":[["肢体语言大师",3],["Wi-Fi搜寻者",2],["鸽子成精",1]]},{"text":"学几句打招呼，假装能聊","main":"假装听懂的人","weights":[["假装听懂的人",3],["路痴本痴",2],["领航员",1]]},{"text":"学的第一句永远是『附近有没有中餐馆』","main":"中餐续命者","weights":[["中餐续命者",3],["倒霉蛋",2],["出片者",1]]},{"text":"这习俗有禁忌吗？别踩了雷","main":"避雷针","weights":[["避雷针",3],["资深剧评人",2],["美食雷达",1]]}]},{"id":"q117","dim":"文化","layer":"explore","stem":"旅行中遇到让你大开眼界的风俗，你？","mains":["小费数学家","讲解器转世","资深剧评人","吟游诗人"],"opts":[{"text":"先搞清楚参与这风俗要不要掏钱、掏多少合适","main":"小费数学家","weights":[["小费数学家",3],["外卖鉴赏家",2],["思乡者",1]]},{"text":"立刻查资料了解背后的历史","main":"讲解器转世","weights":[["讲解器转世",3],["躺平仙人",2],["特种兵王",1]]},{"text":"心里评个分：这风俗有意思8分","main":"资深剧评人","weights":[["资深剧评人",3],["社牛天花板",2],["全村的希望",1]]},{"text":"记下来，回去要写进文章里","main":"吟游诗人","weights":[["吟游诗人",3],["甜蜜连麦者",2],["行走的攻略",1]]}]},{"id":"q118","dim":"文化","layer":"explore","stem":"在异国街头看到完全陌生的街头艺术，你？","mains":["抽象艺术家","纪录片导演","小费数学家","假装听懂的人"],"opts":[{"text":"研究它的色彩和构图","main":"抽象艺术家","weights":[["抽象艺术家",3],["赛博浪人",2],["手机焊脸上",1]]},{"text":"拍下来，这是城市文化的缩影","main":"纪录片导演","weights":[["纪录片导演",3],["公司顶梁柱",2],["鸽子成精",1]]},{"text":"这种街头表演要不要打赏？打赏多少合适？","main":"小费数学家","weights":[["小费数学家",3],["临时起意派",2],["领航员",1]]},{"text":"看完点头微笑，假装看懂了","main":"假装听懂的人","weights":[["假装听懂的人",3],["出门困难户",2],["出片者",1]]}]},{"id":"q119","dim":"文化","layer":"explore","stem":"你对「文化差异」的态度是？","mains":["外卖鉴赏家","肢体语言大师","资深剧评人","路边摊冒险家"],"opts":[{"text":"文化差异最好通过当地外卖来体验，躺着就能了解","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["打卡狂魔",2],["美食雷达",1]]},{"text":"差异没关系，手势能解决一切","main":"肢体语言大师","weights":[["肢体语言大师",3],["思乡者",2],["婴幼儿",1]]},{"text":"有差异才有比较，有比较才有评价","main":"资深剧评人","weights":[["资深剧评人",3],["特种兵王",2],["人型汇率计算器",1]]},{"text":"路边摊是最真实的文化","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["全村的希望",2],["猫门信徒",1]]}]},{"id":"q120","dim":"文化","layer":"explore","stem":"当地人的生活方式让你完全无法理解，你？","mains":["外卖鉴赏家","假装听懂的人","资深剧评人","防盗战神"],"opts":[{"text":"无法理解没关系，我点外卖回房间慢慢理解","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["多啦A梦",2],["行走的攻略",1]]},{"text":"微笑点头，假装我理解了","main":"假装听懂的人","weights":[["假装听懂的人",3],["Wi-Fi搜寻者",2],["手机焊脸上",1]]},{"text":"内心锐评：这生活方式给3分","main":"资深剧评人","weights":[["资深剧评人",3],["鸽子成精",2],["路痴本痴",1]]},{"text":"理解不了没关系，我先确认这片区域安不安全","main":"防盗战神","weights":[["防盗战神",3],["领航员",2],["倒霉蛋",1]]}]},{"id":"q121","dim":"数字","layer":"core","stem":"落地机场的第一件事是？","mains":["公路之王","夜生活之王","手机焊脸上","甜蜜连麦者"],"opts":[{"text":"找最近的租车点，自驾去最方便","main":"公路之王","weights":[["公路之王",3],["出片者",2],["美食雷达",1]]},{"text":"搜搜机场附近有没有不错的酒吧","main":"夜生活之王","weights":[["夜生活之王",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"刷动态，看断了哪些消息","main":"手机焊脸上","weights":[["手机焊脸上",3],["人型汇率计算器",2],["社牛天花板",1]]},{"text":"手机流量主要用来跟对象视频","main":"甜蜜连麦者","weights":[["甜蜜连麦者",3],["猫门信徒",2],["行走的攻略",1]]}]},{"id":"q122","dim":"数字","layer":"core","stem":"民宿Wi-Fi密码怎么都连不上，你？","mains":["Wi-Fi搜寻者","纪录片导演","手机焊脸上","公路之王"],"opts":[{"text":"焦虑值飙升，立刻找老板重置","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["赛博浪人",2],["购物狂魔",1]]},{"text":"没网正好，先整理硬盘里的视频素材","main":"纪录片导演","weights":[["纪录片导演",3],["公司顶梁柱",2],["临时起意派",1]]},{"text":"没网就刷相册，反反复复刷","main":"手机焊脸上","weights":[["手机焊脸上",3],["路痴本痴",2],["出门困难户",1]]},{"text":"没网正好，专心看公路风景","main":"公路之王","weights":[["公路之王",3],["倒霉蛋",2],["打卡狂魔",1]]}]},{"id":"q123","dim":"数字","layer":"core","stem":"手机电量20%且没带充电宝，你？","mains":["手机焊脸上","纪录片导演","多啦A梦","补水狂魔"],"opts":[{"text":"省电模式全开，惜用每一格电","main":"手机焊脸上","weights":[["手机焊脸上",3],["美食雷达",2],["中餐续命者",1]]},{"text":"省着点用，够录一段素材就行","main":"纪录片导演","weights":[["纪录片导演",3],["思乡者",2],["躺平仙人",1]]},{"text":"包里有充电宝，早备好了","main":"多啦A梦","weights":[["多啦A梦",3],["特种兵王",2],["社牛天花板",1]]},{"text":"没电就没电吧，正好专心喝水看风景","main":"补水狂魔","weights":[["补水狂魔",3],["全村的希望",2],["行走的攻略",1]]}]},{"id":"q124","dim":"数字","layer":"core","stem":"眼前是绝美风景但手机没信号，你？","mains":["手机焊脸上","纪录片导演","Wi-Fi搜寻者","防盗战神"],"opts":[{"text":"到处举手机找信号发朋友圈","main":"手机焊脸上","weights":[["手机焊脸上",3],["购物狂魔",2],["吟游诗人",1]]},{"text":"正好专心拍素材，回去再剪辑","main":"纪录片导演","weights":[["纪录片导演",3],["鸽子成精",2],["修行者",1]]},{"text":"满山头找信号急得转圈","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["临时起意派",2],["领航员",1]]},{"text":"没信号更安全，不容易被盗刷","main":"防盗战神","weights":[["防盗战神",3],["出门困难户",2],["出片者",1]]}]},{"id":"q125","dim":"数字","layer":"select","stem":"旅行中工作群突然来消息，你会？","mains":["出门困难户","路边摊冒险家","公司顶梁柱","鸽子成精"],"opts":[{"text":"有网能点外卖就够了，工作消息当没看见","main":"出门困难户","weights":[["出门困难户",3],["打卡狂魔",2],["中餐续命者",1]]},{"text":"先搜搜附近有没有好吃的苍蝇馆子，工作待会儿再说","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["婴幼儿",2],["躺平仙人",1]]},{"text":"找安静地方接入，工作优先","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["人型汇率计算器",2],["社牛天花板",1]]},{"text":"假装没看到，回去了再说","main":"鸽子成精","weights":[["鸽子成精",3],["猫门信徒",2],["行走的攻略",1]]}]},{"id":"q126","dim":"数字","layer":"select","stem":"同伴说「放下手机看看风景」，你？","mains":["路边摊冒险家","出门困难户","Wi-Fi搜寻者","路痴本痴"],"opts":[{"text":"我在搜下一个吃饭的地方，这也算正经事","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["赛博浪人",2],["吟游诗人",1]]},{"text":"放下就放下，反正我手机也懒得拿","main":"出门困难户","weights":[["出门困难户",3],["修行者",2],["领航员",1]]},{"text":"我是在搜下一个景点信息","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["倒霉蛋",2],["出片者",1]]},{"text":"收就收，反正导航我也看不太懂","main":"路痴本痴","weights":[["路痴本痴",3],["讲解器转世",2],["美食雷达",1]]}]},{"id":"q127","dim":"数字","layer":"select","stem":"飞机上没网的八小时，你会？","mains":["出门困难户","Wi-Fi搜寻者","婴幼儿","吟游诗人"],"opts":[{"text":"没网没外卖，这八小时简直是煎熬","main":"出门困难户","weights":[["出门困难户",3],["中餐续命者",2],["思乡者",1]]},{"text":"反复打开飞行模式确认","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["躺平仙人",2],["罗马觉皇",1]]},{"text":"手机又用不了，干脆睡觉","main":"婴幼儿","weights":[["婴幼儿",3],["特种兵王",2],["社牛天花板",1]]},{"text":"掏出纸笔写点东西","main":"吟游诗人","weights":[["吟游诗人",3],["全村的希望",2],["甜蜜连麦者",1]]}]},{"id":"q128","dim":"数字","layer":"select","stem":"你最离不开的旅行APP是？","mains":["公路之王","Wi-Fi搜寻者","婴幼儿","思乡者"],"opts":[{"text":"导航加公路歌单，开车时手机就是副驾","main":"公路之王","weights":[["公路之王",3],["行走的攻略",2],["购物狂魔",1]]},{"text":"Wi-Fi找网神器","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["抽象艺术家",2],["临时起意派",1]]},{"text":"APP太多了眼花，给我一个地图就行","main":"婴幼儿","weights":[["婴幼儿",3],["领航员",2],["出片者",1]]},{"text":"视频通话排第一，走到哪都要跟家人报平安","main":"思乡者","weights":[["思乡者",3],["打卡狂魔",2],["美食雷达",1]]}]},{"id":"q129","dim":"数字","layer":"explore","stem":"出国要不要买流量包，你的想法是？","mains":["Wi-Fi搜寻者","公路之王","避雷针","人型汇率计算器"],"opts":[{"text":"必买，断网等于失联","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["罗马觉皇",2],["时差冤魂",1]]},{"text":"导航离线就行，歌单提前下好，流量包免了","main":"公路之王","weights":[["公路之王",3],["社牛天花板",2],["甜蜜连麦者",1]]},{"text":"先查流量包差评，踩过雷的运营商直接拉黑","main":"避雷针","weights":[["避雷针",3],["猫门信徒",2],["多啦A梦",1]]},{"text":"对比各国流量包换算成人民币再决定","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["失物招领者",2],["补水狂魔",1]]}]},{"id":"q130","dim":"数字","layer":"explore","stem":"旅行中你手机的使用频率是？","mains":["中餐续命者","公路之王","Wi-Fi搜寻者","婴幼儿"],"opts":[{"text":"大众点评永远置顶，走到哪搜到哪","main":"中餐续命者","weights":[["中餐续命者",3],["赛博浪人",2],["购物狂魔",1]]},{"text":"导航加歌单，开车离不开它","main":"公路之王","weights":[["公路之王",3],["修行者",2],["临时起意派",1]]},{"text":"主要用来找网和导航","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["倒霉蛋",2],["出片者",1]]},{"text":"能不用就不用，旅行的风景比屏幕好看","main":"婴幼儿","weights":[["婴幼儿",3],["讲解器转世",2],["美食雷达",1]]}]},{"id":"q131","dim":"数字","layer":"explore","stem":"老板发消息说有个紧急会，你？","mains":["公司顶梁柱","防盗战神","鸽子成精","出门困难户"],"opts":[{"text":"立刻找安静地方接入","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["躺平仙人",2],["时差冤魂",1]]},{"text":"先找个安全的角落再掏手机处理","main":"防盗战神","weights":[["防盗战神",3],["特种兵王",2],["小费数学家",1]]},{"text":"假装信号不好，已读不回","main":"鸽子成精","weights":[["鸽子成精",3],["全村的希望",2],["甜蜜连麦者",1]]},{"text":"紧急会？我只想知道外卖到了没","main":"出门困难户","weights":[["出门困难户",3],["多啦A梦",2],["补水狂魔",1]]}]},{"id":"q132","dim":"数字","layer":"explore","stem":"关于在旅行中工作，你的态度是？","mains":["公司顶梁柱","防盗战神","夜生活之王","打卡狂魔"],"opts":[{"text":"工作永远第一，休假也要回消息","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["行走的攻略",2],["购物狂魔",1]]},{"text":"工作消息只在安全私密的地方回复","main":"防盗战神","weights":[["防盗战神",3],["抽象艺术家",2],["临时起意派",1]]},{"text":"工作尽快处理完，好腾出晚上的时间泡夜场","main":"夜生活之王","weights":[["夜生活之王",3],["路痴本痴",2],["领航员",1]]},{"text":"工作可以等，打卡清单不能断，绝不为开会漏景点","main":"打卡狂魔","weights":[["打卡狂魔",3],["出片者",2],["美食雷达",1]]}]},{"id":"q133","dim":"心态","layer":"core","stem":"路边一块形状奇怪的石头，你会？","mains":["抽象艺术家","吟游诗人","纪录片导演","打卡狂魔"],"opts":[{"text":"看出它像一只沉思的猫，天然艺术品","main":"抽象艺术家","weights":[["抽象艺术家",3],["外卖鉴赏家",2],["罗马觉皇",1]]},{"text":"随口为它赋诗一首","main":"吟游诗人","weights":[["吟游诗人",3],["时差冤魂",2],["小费数学家",1]]},{"text":"拍下来，这段素材可以剪进vlog的开头","main":"纪录片导演","weights":[["纪录片导演",3],["社牛天花板",2],["甜蜜连麦者",1]]},{"text":"拍下来发朋友圈问大家像什么","main":"打卡狂魔","weights":[["打卡狂魔",3],["猫门信徒",2],["失物招领者",1]]}]},{"id":"q134","dim":"心态","layer":"core","stem":"旅途中灵感突然来了，你？","mains":["抽象艺术家","吟游诗人","小费数学家","公司顶梁柱"],"opts":[{"text":"当场速写下来","main":"抽象艺术家","weights":[["抽象艺术家",3],["补水狂魔",2],["赛博浪人",1]]},{"text":"掏出备忘录写两句","main":"吟游诗人","weights":[["吟游诗人",3],["购物狂魔",2],["修行者",1]]},{"text":"记下来，但得先算完这顿饭的小费才安心写","main":"小费数学家","weights":[["小费数学家",3],["临时起意派",2],["领航员",1]]},{"text":"等有空再说，先把手头的处理完","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["倒霉蛋",2],["讲解器转世",1]]}]},{"id":"q135","dim":"心态","layer":"core","stem":"你觉得旅行的意义是？","mains":["修行者","吟游诗人","抽象艺术家","小费数学家"],"opts":[{"text":"在陌生中找回内心的平静","main":"修行者","weights":[["修行者",3],["美食雷达",2],["思乡者",1]]},{"text":"收集故事，丰富人生","main":"吟游诗人","weights":[["吟游诗人",3],["躺平仙人",2],["罗马觉皇",1]]},{"text":"看见不一样的美","main":"抽象艺术家","weights":[["抽象艺术家",3],["特种兵王",2],["精算师",1]]},{"text":"花最少的钱获得最多体验，性价比即意义","main":"小费数学家","weights":[["小费数学家",3],["人型汇率计算器",2],["全村的希望",1]]}]},{"id":"q136","dim":"心态","layer":"core","stem":"清晨推开窗看到一片雾，你会？","mains":["抽象艺术家","吟游诗人","修行者","外卖鉴赏家"],"opts":[{"text":"拍下来，这是天然水墨画","main":"抽象艺术家","weights":[["抽象艺术家",3],["甜蜜连麦者",2],["多啦A梦",1]]},{"text":"雾里看景正好作诗","main":"吟游诗人","weights":[["吟游诗人",3],["失物招领者",2],["行走的攻略",1]]},{"text":"深吸一口气，享受静谧","main":"修行者","weights":[["修行者",3],["避雷针",2],["赛博浪人",1]]},{"text":"关窗躺回床上，打开外卖APP看看早餐吃什么","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["路痴本痴",2],["领航员",1]]}]},{"id":"q137","dim":"心态","layer":"select","stem":"面对一家有故事的百年老店，你？","mains":["吟游诗人","抽象艺术家","修行者","讲解器转世"],"opts":[{"text":"听完故事写成一段随笔","main":"吟游诗人","weights":[["吟游诗人",3],["出片者",2],["路边摊冒险家",1]]},{"text":"研究它的招牌和纹样","main":"抽象艺术家","weights":[["抽象艺术家",3],["中餐续命者",2],["思乡者",1]]},{"text":"静静感受岁月沉淀","main":"修行者","weights":[["修行者",3],["罗马觉皇",2],["时差冤魂",1]]},{"text":"跟老板聊它的历史，问出十个冷知识","main":"讲解器转世","weights":[["讲解器转世",3],["精算师",2],["社牛天花板",1]]}]},{"id":"q138","dim":"心态","layer":"select","stem":"回程火车上你通常在想？","mains":["打卡狂魔","抽象艺术家","公司顶梁柱","夜生活之王"],"opts":[{"text":"旅行的意义清单全打勾","main":"打卡狂魔","weights":[["打卡狂魔",3],["全村的希望",2],["猫门信徒",1]]},{"text":"回味某个难忘的画面和色彩","main":"抽象艺术家","weights":[["抽象艺术家",3],["多啦A梦",2],["补水狂魔",1]]},{"text":"明天上班的待办清单","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["行走的攻略",2],["赛博浪人",1]]},{"text":"在想这趟哪天还值得再来，专门为夜场留一晚","main":"夜生活之王","weights":[["夜生活之王",3],["购物狂魔",2],["临时起意派",1]]}]},{"id":"q139","dim":"心态","layer":"select","stem":"突然多出一小时空白时间，你？","mains":["外卖鉴赏家","抽象艺术家","讲解器转世","购物狂魔"],"opts":[{"text":"回酒店点杯当地特色外卖，躺着等送达","main":"外卖鉴赏家","weights":[["外卖鉴赏家",3],["领航员",2],["倒霉蛋",1]]},{"text":"正好观察街边光影变化，灵感无处不在","main":"抽象艺术家","weights":[["抽象艺术家",3],["资深剧评人",2],["美食雷达",1]]},{"text":"正好给同伴科普一下这个街区的前世今生","main":"讲解器转世","weights":[["讲解器转世",3],["路边摊冒险家",2],["思乡者",1]]},{"text":"附近有没有商场可逛","main":"购物狂魔","weights":[["购物狂魔",3],["躺平仙人",2],["时差冤魂",1]]}]},{"id":"q140","dim":"心态","layer":"select","stem":"旅伴选你，最看重的特质是？","mains":["讲解器转世","打卡狂魔","公司顶梁柱","抽象艺术家"],"opts":[{"text":"知识渊博，走到哪讲到哪保证不冷场","main":"讲解器转世","weights":[["讲解器转世",3],["特种兵王",2],["人型汇率计算器",1]]},{"text":"执行力强，说去哪就去绝不含糊","main":"打卡狂魔","weights":[["打卡狂魔",3],["现金乞丐",2],["社牛天花板",1]]},{"text":"守时，行程靠谱","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["甜蜜连麦者",2],["猫门信徒",1]]},{"text":"审美在线，能发现别人错过的小众机位","main":"抽象艺术家","weights":[["抽象艺术家",3],["失物招领者",2],["补水狂魔",1]]}]},{"id":"q141","dim":"心态","layer":"explore","stem":"对「说走就走」这四个字，你？","mains":["抽象艺术家","人型汇率计算器","公司顶梁柱","修行者"],"opts":[{"text":"浪漫，但我的说走就走要先选好滤镜风格","main":"抽象艺术家","weights":[["抽象艺术家",3],["避雷针",2],["赛博浪人",1]]},{"text":"说走可以，但汇率得先查好，花多少心里有数","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["鸽子成精",2],["临时起意派",1]]},{"text":"做不到，工作不允许","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["路痴本痴",2],["倒霉蛋",1]]},{"text":"可以，但不必，心到了就够","main":"修行者","weights":[["修行者",3],["出片者",2],["美食雷达",1]]}]},{"id":"q142","dim":"心态","layer":"explore","stem":"旅行结束那天你的心情是？","mains":["讲解器转世","人型汇率计算器","公司顶梁柱","修行者"],"opts":[{"text":"这次又攒了一肚子冷知识可以讲了","main":"讲解器转世","weights":[["讲解器转世",3],["中餐续命者",2],["思乡者",1]]},{"text":"默默算了一下这趟花的钱，折合多少天工资","main":"人型汇率计算器","weights":[["人型汇率计算器",3],["罗马觉皇",2],["时差冤魂",1]]},{"text":"整理照片和报销，回归工作模式","main":"公司顶梁柱","weights":[["公司顶梁柱",3],["精算师",2],["社牛天花板",1]]},{"text":"平静，回归日常也是修行","main":"修行者","weights":[["修行者",3],["全村的希望",2],["猫门信徒",1]]}]},{"id":"q143","dim":"心态","layer":"explore","stem":"旅行中最治愈你的瞬间是？","mains":["思乡者","出门困难户","修行者","路边摊冒险家"],"opts":[{"text":"吃到一口像家里味道的东西","main":"思乡者","weights":[["思乡者",3],["补水狂魔",2],["多啦A梦",1]]},{"text":"旅行的意义证明出门不如在家","main":"出门困难户","weights":[["出门困难户",3],["行走的攻略",2],["赛博浪人",1]]},{"text":"什么都不想的放空时刻","main":"修行者","weights":[["修行者",3],["临时起意派",2],["领航员",1]]},{"text":"一口地道路边摊就够了","main":"路边摊冒险家","weights":[["路边摊冒险家",3],["倒霉蛋",2],["资深剧评人",1]]}]},{"id":"q144","dim":"心态","layer":"explore","stem":"如果用一个词形容你的旅行哲学，是？","mains":["抽象艺术家","纪录片导演","Wi-Fi搜寻者","资深剧评人"],"opts":[{"text":"重构——同样的风景，我看到不同的形状","main":"抽象艺术家","weights":[["抽象艺术家",3],["美食雷达",2],["躺平仙人",1]]},{"text":"蒙太奇——把零散的片段剪成一部好片","main":"纪录片导演","weights":[["纪录片导演",3],["时差冤魂",2],["特种兵王",1]]},{"text":"旅行的意义需要网络来分享","main":"Wi-Fi搜寻者","weights":[["Wi-Fi搜寻者",3],["现金乞丐",2],["社牛天花板",1]]},{"text":"讲究——好就是好，差就是差，绝不凑合","main":"资深剧评人","weights":[["资深剧评人",3],["甜蜜连麦者",2],["猫门信徒",1]]}]}],"profiles":{"路痴本痴":{"emoji":"🧭","tagline":"导航开了还是迷，但快乐不减","desc":"你是那种跟着感觉走的人，迷路对你来说不是意外，是日常。好在你的松弛感让每次走错路都变成意外惊喜。","buddy":["领航员","行走的攻略"]},"领航员":{"emoji":"🗺️","tagline":"人形GPS，全队的定海神针","desc":"方向感是你的超能力，攻略是你的武器。有你在的队伍永远不会走丢，你默默承担了所有导航重任。","buddy":["路痴本痴","特种兵王"]},"出门困难户":{"emoji":"🛋️","tagline":"能不出门就不出门，出了门就想回家","desc":"你享受旅行的想象胜过旅途本身。对你来说，最完美的旅行是坐在沙发上刷旅行vlog。但你一旦出发，也有独特的随性快乐。","buddy":["特种兵王","社牛天花板"]},"倒霉蛋":{"emoji":"☔","tagline":"旅行锦鲤的反面，但心态满分","desc":"航班取消、行李延误、下雨必淋……你的旅行总带点戏剧性。但你那「来都来了」的豁达，反而让这些意外成了最难忘的故事。","buddy":["领航员","多啦A梦"]},"出片者":{"emoji":"📸","tagline":"没拍等于没去，构图是信仰","desc":"你的旅行存在于取景框里。每一帧都要精修，每一个机位都要研究。朋友圈九宫格是你的作品集，也是你的旅行勋章。","buddy":["纪录片导演","打卡狂魔"]},"打卡狂魔":{"emoji":"📍","tagline":"清单上的每一格都要打勾","desc":"你的旅行是一场打卡战役。网红景点、必吃榜单、隐藏机位，一个都不能少。效率是你最大的武器。","buddy":["出片者","特种兵王"]},"纪录片导演":{"emoji":"🎬","tagline":"把旅行拍成电影，生活是素材","desc":"你不只是记录，你在叙事。转场、配乐、节奏，每一支vlog都有起承转合。旅行对你来说是一场创作。","buddy":["出片者","资深剧评人"]},"讲解器转世":{"emoji":"🎧","tagline":"行走的百科全书，走到哪讲到哪","desc":"你对每个景点的前世今生了如指掌。同伴眼里你是免费导游，你自己乐在其中。知识是你旅行的滤镜。","buddy":["纪录片导演","文化震惊体"]},"资深剧评人":{"emoji":"📝","tagline":"旅行就是一场演出，你是评审","desc":"你对一切都有标准：这景点几分、那餐厅值不值、这个城市有没有诚意。挑剔的背后，是对好体验的执着。","buddy":["出片者","美食雷达"]},"美食雷达":{"emoji":"🍜","tagline":"鼻子比导航准，胃是旅行指南","desc":"哪里有好吃的，你的第六感比任何APP都准。你旅行的主线任务只有一个：吃。其他都是支线。","buddy":["路边摊冒险家","中餐续命者"]},"路边摊冒险家":{"emoji":"🍢","tagline":"越local越好，黑暗料理也敢试","desc":"米其林不如路边摊，你的旅行哲学是「越脏越好吃」。你愿意为了一口地道风味钻进任何小巷。","buddy":["美食雷达","文化震惊体"]},"中餐续命者":{"emoji":"🥢","tagline":"出国三天就想火锅，中国胃铁打的","desc":"你可以接受异国风情，但你的胃永远忠诚于中餐。老干妈是你行李箱里的定海神针。","buddy":["美食雷达","思乡者"]},"外卖鉴赏家":{"emoji":"🛵","tagline":"酒店的床和外卖才是绝配","desc":"你旅行的快乐在于：躺在酒店点当地外卖，不用出门就能尝遍美食。懒和馋在你身上完美统一。","buddy":["躺平仙人","美食雷达"]},"思乡者":{"emoji":"🏠","tagline":"人在旅途，心在家里","desc":"你容易被一缕熟悉的味道勾起乡愁。旅行让你更懂家的重要性，每一次想家都是一次温柔的确认。","buddy":["中餐续命者","甜蜜连麦者"]},"婴幼儿":{"emoji":"🍼","tagline":"挑食又脆弱，但可爱即正义","desc":"你对陌生食物充满警惕，口味保守得像个宝宝。但你那份纯真的好奇，也是旅行里最珍贵的部分。","buddy":["多啦A梦","全村的希望"]},"躺平仙人":{"emoji":"🛌","tagline":"床就是景点，躺平即旅行","desc":"你的旅行信条是「来都来了，不如躺平」。酒店大堂、阳台躺椅、公园长凳，哪里能瘫哪里就是目的地。","buddy":["罗马觉皇","外卖鉴赏家"]},"罗马觉皇":{"emoji":"😴","tagline":"睡到自然醒，旅行从中午开始","desc":"早起毁一天是你的信条。你的旅行节奏是慢的、松的、不被闹钟绑架的。充足的睡眠是你最好的旅伴。","buddy":["躺平仙人","时差冤魂"]},"时差冤魂":{"emoji":"🥱","tagline":"倒时差是玄学，清醒全靠命","desc":"跨时区旅行对你来说是渡劫。凌晨四点瞪着天花板是你的旅行名场面。但熬过时差的你，反而比别人多看了几个日出。","buddy":["罗马觉皇","夜生活之王"]},"夜生活之王":{"emoji":"🌃","tagline":"白天睡觉，夜晚才是主场","desc":"太阳落山你的旅行才刚开始。夜市、酒吧、livehouse，你的高光时刻都在深夜。旅行的意义在午夜之后。","buddy":["特种兵王","出片者"]},"特种兵王":{"emoji":"⚡","tagline":"行程拉满，一天当两天用","desc":"你是旅行界的特种兵，五点起床、五个景点、两万步是你的标配。效率是你的浪漫，打卡是你的勋章。","buddy":["夜生活之王","领航员"]},"精算师":{"emoji":"📊","tagline":"Excel拉预算，每一分都算到","desc":"你的旅行是精密的项目管理。预算表、行程表、性价比分析，一切尽在你的掌控。理性是你最性感的旅行武器。","buddy":["行走的攻略","人型汇率计算器"]},"小费数学家":{"emoji":"💰","tagline":"小费给多少，这是个数学题","desc":"你对每一笔额外支出都精打细算。小费、服务费、满减，你的脑子就是个实时计算器。省下的每一分都是胜利。","buddy":["精算师","人型汇率计算器"]},"人型汇率计算器":{"emoji":"💱","tagline":"看到价格自动换算，零点几秒出答案","desc":"你的大脑里装着一个实时汇率表。任何标价在你眼里都会自动折算成人民币，帮你做出最理性的消费决策。","buddy":["精算师","小费数学家"]},"现金乞丐":{"emoji":"🤲","tagline":"又没钱了，这次是真的","desc":"你永远是那个没取够现金的人。但你的松弛让你在窘迫中也能笑出来，毕竟钱没了可以再挣，体验不能等。","buddy":["多啦A梦","精算师"]},"社牛天花板":{"emoji":"🎉","tagline":"十分钟后和全场是朋友","desc":"你的社交天赋在旅途中大放异彩。青旅、拼车、路边摊，哪里都是你的社交场。你的人脉遍布每一个去过的城市。","buddy":["全村的希望","夜生活之王"]},"全村的希望":{"emoji":"🤝","tagline":"团队后勤总管，靠谱第一名","desc":"你是队伍里的定海神针，张罗行程、照顾同伴、解决突发。没有你的旅行，别人连酒店都找不到。","buddy":["社牛天花板","领航员"]},"甜蜜连麦者":{"emoji":"📱","tagline":"人在旅途，视频不断","desc":"你旅行的重要环节是和重要的人保持联系。每一处风景都要实时分享，每一次心动都要立刻连线。","buddy":["思乡者","社牛天花板"]},"猫门信徒":{"emoji":"🐱","tagline":"见猫必蹲，行程可改猫不能错过","desc":"你的旅行雷达永远在搜索猫的身影。路边的流浪猫、咖啡馆的店猫，都是你的必打卡点。为猫改变行程，你心甘情愿。","buddy":["社牛天花板","修行者"]},"多啦A梦":{"emoji":"🎒","tagline":"口袋里什么都有，百宝箱成精","desc":"你是行走的应急物资库。创可贴、充电线、转换插头、常备药，同伴需要的你都有。有你在的旅行特别安心。","buddy":["全村的希望","防盗战神"]},"失物招领者":{"emoji":"🔍","tagline":"丢东西第一名，找自己东西也难","desc":"你的旅行总是伴随着丢三落四。护照、耳机、水杯，总有东西在消失。但你也练就了一身找东西的本事。","buddy":["多啦A梦","防盗战神"]},"补水狂魔":{"emoji":"💧","tagline":"人可以没钱不能没水，水杯不离手","desc":"补水是你的信仰。保温杯、电解质水、冲剂，你的包里永远有喝的。在你看来，多喝水是解决一切旅行不适的良方。","buddy":["多啦A梦","特种兵王"]},"防盗战神":{"emoji":"🔒","tagline":"防盗意识拉满，贼见了都绕道","desc":"你是旅行安全专家。隐形腰包、行李锁、防盗背包，你的防护装备堪比特工。有你在，全队的财产安全有了保障。","buddy":["多啦A梦","全村的希望"]},"公路之王":{"emoji":"🚗","tagline":"方向盘在手里，自由在脚下","desc":"你最爱的是公路本身。风景在车窗外流转，音乐在车厢里流淌，目的地反而没那么重要。自驾是你的旅行信仰。","buddy":["特种兵王","行走的攻略"]},"行走的攻略":{"emoji":"📖","tagline":"攻略烂熟于心，人形旅行百科","desc":"你出发前就把攻略研究透了，每个景点、每条路线、每家餐厅都了如指掌。你是全队的信息中枢，有问题找你就对了。","buddy":["精算师","领航员"]},"避雷针":{"emoji":"⚡","tagline":"踩雷差评一眼识破，反向种草专家","desc":"你的特长是避坑。你刷差评比刷好评更认真，别人种草你反向验证。跟你旅行，永远不会踩到雷区。","buddy":["行走的攻略","精算师"]},"文化震惊体":{"emoji":"😲","tagline":"什么都想惊呼，文化冲击感拉满","desc":"你对一切异国文化充满惊叹。不同的习俗、语言、生活方式都让你大开眼界。你的旅行是一场持续的文化冲击体验。","buddy":["讲解器转世","肢体语言大师"]},"肢体语言大师":{"emoji":"🤙","tagline":"比手画脚走天下，手势就是世界语","desc":"语言不通？不存在的。你的手势、表情、肢体动作能跨越一切语言障碍。你用身体和全世界对话。","buddy":["社牛天花板","假装听懂的人"]},"假装听懂的人":{"emoji":"😊","tagline":"微笑点头绝技，全程假装get到","desc":"你的旅行生存技能是「假装听懂」。听不懂就微笑，看不懂就点头，气氛到位就行。你的松弛感让一切尴尬消于无形。","buddy":["肢体语言大师","文化震惊体"]},"赛博浪人":{"emoji":"💻","tagline":"人在路上，工照打，数字游民本民","desc":"你的旅行和工作不分家。沙滩上开视频会，咖啡馆里写代码，你的办公桌遍布全球。自由和事业你全都要。","buddy":["Wi-Fi搜寻者","精算师"]},"Wi-Fi搜寻者":{"emoji":"📶","tagline":"断网等于断氧，WiFi密码比命重要","desc":"你的旅行第一要务是连上网。没有WiFi的地方对你来说就是无人区，信号满格是你最大的安全感。","buddy":["赛博浪人","手机焊脸上"]},"手机焊脸上":{"emoji":"📲","tagline":"放下手机看风景？再拍一张就走","desc":"你的手机和你形影不离。拍照、刷动态、发朋友圈，旅行在屏幕里和现实里同步进行。手机是你的第二双眼睛。","buddy":["出片者","Wi-Fi搜寻者"]},"购物狂魔":{"emoji":"🛍️","tagline":"旅行就是换个地方购物","desc":"你的旅行KPI是购物。免税店、当地市集、限量联名，什么都想买。行李箱永远不够装，钱包永远在抗议。","buddy":["精算师","出片者"]},"公司顶梁柱":{"emoji":"💼","tagline":"休假也在回消息，工作永远第一","desc":"你很难真正放下工作去旅行。紧急会议、客户消息随时找上门。你努力在工作和生活之间找平衡，虽然常常偏向工作。","buddy":["赛博浪人","行走的攻略"]},"抽象艺术家":{"emoji":"🎨","tagline":"看石头像猫，看云像诗，脑洞无边界","desc":"你的旅行充满了独特的审美发现。别人看到的是风景，你看到的是构图、色彩和故事。你的眼睛自带艺术滤镜。","buddy":["纪录片导演","吟游诗人"]},"吟游诗人":{"emoji":"📜","tagline":"走到哪写到哪，旅行即创作","desc":"你用文字记录旅途的每一个瞬间。备忘录里写满了碎片灵感，每一次旅行都是一首未完成的诗。","buddy":["抽象艺术家","修行者"]},"鸽子成精":{"emoji":"🕊️","tagline":"「下次一定」，约好的事总改期","desc":"你是放鸽子高手，约好的旅行常常因为各种原因推迟。但你那份「来日方长」的松弛，也是一种独特的生活哲学。","buddy":["临时起意派","躺平仙人"]},"修行者":{"emoji":"🧘","tagline":"旅行即修行，少即是多","desc":"你旅行的目的不是打卡，是修心。慢节奏、深体验、静感受，你在陌生的环境里寻找内心的平静。","buddy":["吟游诗人","躺平仙人"]},"临时起意派":{"emoji":"🎲","tagline":"攻略？不存在的，走到哪算哪","desc":"你的旅行没有计划，只有灵感。说走就走，说改就改，随机性是你最大的快乐来源。迷路对你来说是特色不是bug。","buddy":["鸽子成精","抽象艺术家"]}},"totalQuestions":18};
+
+
+window.TBQuiz = (function() {
+  var state = null;
+
+  function selectNext() {
+    var s = state;
+    if (s.step >= 18) { s.currentQ = null; return; }
+    // Initialize rule priority on first call
+    if (!s._ruleInit) {
+      TravelBuddyEngine.setRulePriority(TB_DATA.questions, TB_DATA.types);
+      s._ruleInit = true;
+    }
+    s.currentQ = TravelBuddyEngine.selectNext(
+      TB_DATA.questions, TB_DATA.dims, s.history.map(function(h){return h.qId;}), s.seenIds, s.scores, s.step, Math.random
+    );
+    if (!s.currentQ) return;
+    s.shuffledOpts = TravelBuddyEngine.shuffleOptions(s.currentQ.opts);
+    // 记录曾展示过的题目，回退不收缩，作为后续选路排除集
+    if (s.seenIds.indexOf(s.currentQ.id) === -1) s.seenIds.push(s.currentQ.id);
+  }
+
+  function getCurrent() {
+    var s = state;
+    if (!s || !s.currentQ) return null;
+    return {
+      step: s.step + 1,
+      total: 18,
+      progress: Math.round((s.step / 18) * 100),
+      stem: s.currentQ.stem,
+      dim: s.currentQ.dim,
+      options: s.shuffledOpts.map(function(o) { return o.text; }),
+      canGoBack: s.history.length > 0,
+      prevSelectedIdx: (s._prevSelectedIdx !== undefined ? s._prevSelectedIdx : -1)
+    };
+  }
+
+  return {
+    start: function() {
+      state = {
+        scores: {}, history: [], step: 0,
+        currentQ: null, shuffledOpts: null, _ruleInit: false, seenIds: []
+      };
+      selectNext();
+      return getCurrent();
+    },
+
+    current: function() { return getCurrent(); },
+
+    answer: function(displayedIdx) {
+      var s = state;
+      if (!s || !s.currentQ) return null;
+      s._prevSelectedIdx = undefined;
+      var opt = s.shuffledOpts[displayedIdx];
+      var origIdx = s.currentQ.opts.indexOf(opt);
+      TravelBuddyEngine.applyAnswer(s.scores, s.currentQ, origIdx);
+      s.history.push({
+        qId: s.currentQ.id,
+        origIdx: origIdx,
+        shuffledOpts: s.shuffledOpts,
+        currentQ: s.currentQ
+      });
+      s.step++;
+      selectNext();
+      return getCurrent();
+    },
+
+    back: function() {
+      var s = state;
+      if (!s || s.history.length === 0) return null;
+      var last = s.history.pop();
+      // Undo the answer
+      var w = last.currentQ.opts[last.origIdx].weights;
+      for (var i = 0; i < w.length; i++) {
+        s.scores[w[i][0]] = (s.scores[w[i][0]] || 0) - w[i][1];
+        if (s.scores[w[i][0]] <= 0) delete s.scores[w[i][0]];
+      }
+      s.step--;
+      // Restore the previous question with its original shuffled options
+      s.currentQ = last.currentQ;
+      s.shuffledOpts = last.shuffledOpts;
+      // Track which option was previously selected for UI marking
+      var prevOpt = last.currentQ.opts[last.origIdx];
+      s._prevSelectedIdx = last.shuffledOpts.indexOf(prevOpt);
+      return getCurrent();
+    },
+
+    isFinished: function() {
+      return state && (state.step >= 18 || !state.currentQ);
+    },
+
+    result: function() {
+      var s = state;
+      if (!s || s.step < 1) return null;
+      var w = TravelBuddyEngine.calcWinner(s.scores);
+      var answeredQs = s.history.map(function(h){return h.currentQ;});
+      var rate = TravelBuddyEngine.matchRate(s.scores, w.winner, answeredQs);
+      var profile = TB_DATA.profiles[w.winner] || {emoji:"🎯",tagline:"神秘旅人",desc:"你的旅行风格独一无二。",buddy:[]};
+      var ranked = Object.keys(s.scores).map(function(k) {
+        return { type: k, score: s.scores[k] };
+      }).sort(function(a, b) { return b.score - a.score; });
+      var buddies = (profile.buddy || []).map(function(name) {
+        var p = TB_DATA.profiles[name] || {emoji:"🧳",tagline:""};
+        return { name: name, emoji: p.emoji, tagline: p.tagline };
+      });
+      var path = s.history.map(function(h){return [h.qId, h.origIdx];});
+      var share = TravelBuddyEngine.encodeShare(w.winner, path);
+      return {
+        winner: w.winner,
+        resolvedBy: w.resolvedBy,
+        matchRate: rate,
+        profile: profile,
+        buddies: buddies,
+        shareLink: share,
+        top5: ranked.slice(0, 5),
+        totalQuestions: 18
+      };
+    },
+
+    replay: function(path) {
+      state = {
+        scores: {}, history: [], step: 0,
+        currentQ: null, shuffledOpts: null, _ruleInit: false, seenIds: []
+      };
+      var s = state;
+      TravelBuddyEngine.setRulePriority(TB_DATA.questions, TB_DATA.types);
+      s._ruleInit = true;
+      for (var i = 0; i < path.length; i++) {
+        var qId = path[i][0];
+        var origIdx = path[i][1];
+        var q = null;
+        for (var j = 0; j < TB_DATA.questions.length; j++) {
+          if (TB_DATA.questions[j].id === qId) { q = TB_DATA.questions[j]; break; }
+        }
+        if (!q) continue;
+        TravelBuddyEngine.applyAnswer(s.scores, q, origIdx);
+        s.history.push({qId: qId, origIdx: origIdx, shuffledOpts: q.opts, currentQ: q});
+        if (s.seenIds.indexOf(qId) === -1) s.seenIds.push(qId);
+        s.step++;
+      }
+      return this.result();
+    },
+
+    decodeShare: function(hash) {
+      return TravelBuddyEngine.decodeShare(hash);
+    },
+
+    getProfile: function(typeName) {
+      return TB_DATA.profiles[typeName] || null;
+    },
+
+    allTypes: function() {
+      return TB_DATA.types.map(function(t) {
+        var p = TB_DATA.profiles[t] || {};
+        return { name: t, emoji: p.emoji || '🎯', tagline: p.tagline || '' };
+      });
+    }
+  };
+})();
+
+function showPage(id){var modes={welcome:'flex',quiz:'block',result:'block'};var p=['welcome','quiz','result'];for(var i=0;i<p.length;i++)document.getElementById(p[i]).style.display=p[i]===id?modes[p[i]]:'none'}
+
+function startQuiz(){TBQuiz.start();showPage('quiz');renderQuestion()}
+
+function renderQuestion(){
+  var q=TBQuiz.current();
+  if(!q||TBQuiz.isFinished()){showResult();return}
+  document.getElementById('progressFill').style.width=(q.step/q.total*100)+'%';
+  document.getElementById('progressText').textContent=q.step+' / '+q.total;
+  var backBtn=document.getElementById('backBtn');
+  if(q.canGoBack)backBtn.classList.remove('disabled');else backBtn.classList.add('disabled');
+  document.getElementById('quizDim').textContent=q.dim;
+  document.getElementById('quizStem').textContent=q.stem;
+  var html='';
+  for(var i=0;i<q.options.length;i++){
+    var cls='opt-item slide-in';
+    if(q.prevSelectedIdx===i)cls+=' prev-selected';
+    html+='<div class="'+cls+'" onclick="selectOption('+i+')" style="animation-delay:'+(i*0.05)+'s">';
+    html+='<div class="opt-num">'+(i+1)+'</div><div>'+q.options[i]+'</div></div>';
+  }
+  document.getElementById('optList').innerHTML=html;
+  var c=document.getElementById('quizContainer');c.classList.remove('fade-in');void c.offsetWidth;c.classList.add('fade-in');
+}
+
+function selectOption(idx){
+  var items=document.querySelectorAll('.opt-item');
+  if(items[idx])items[idx].classList.add('selected');
+  setTimeout(function(){TBQuiz.answer(idx);renderQuestion()},200);
+}
+
+function goBack(){TBQuiz.back();renderQuestion()}
+
+function restartQuiz(){TBQuiz.start();showPage('welcome')}
+
+function renderResult(r){
+  if(!r)return;
+  showPage('result');
+  var p=r.profile||{};
+  document.getElementById('resultEmoji').textContent=p.emoji||'🎯';
+  document.getElementById('resultType').textContent=r.winner;
+  document.getElementById('resultTagline').textContent=p.tagline||'';
+  document.getElementById('resultDesc').textContent=p.desc||'';
+  var rate=Math.round(r.matchRate||0);
+  document.getElementById('rateCircle').style.setProperty('--rate',rate);
+  document.getElementById('rateNum').textContent=rate+'%';
+  var bh='',buddies=r.buddies||[];
+  for(var i=0;i<buddies.length;i++){
+    bh+='<div class="buddy-card"><div class="buddy-emoji">'+(buddies[i].emoji||'🧳')+'</div>';
+    bh+='<div class="buddy-name">'+buddies[i].name+'</div>';
+    bh+='<div class="buddy-tag">'+(buddies[i].tagline||'')+'</div></div>';
+  }
+  document.getElementById('buddyList').innerHTML=bh;
+  var top5=r.top5||[],mx=top5.length>0?top5[0].score:1,th='';
+  for(var i=0;i<top5.length;i++){
+    var pct=Math.round((top5[i].score/mx)*100);
+    th+='<div class="top5-item"><div class="top5-rank">'+(i+1)+'</div>';
+    th+='<div class="top5-name">'+top5[i].type+'</div>';
+    th+='<div class="top5-bar"><div class="top5-fill" style="width:'+pct+'%"></div></div>';
+    th+='<div class="top5-score">'+top5[i].score+'</div></div>';
+  }
+  document.getElementById('top5List').innerHTML=th;
+}
+
+function showResult(){renderResult(TBQuiz.result())}
+
+function takeScreenshot(){
+  var el=document.getElementById('resultContainer');
+  var toast=document.getElementById('screenshotToast');
+  toast.textContent='正在生成截图...';
+  toast.classList.add('show');
+  html2canvas(el,{backgroundColor:'#faf6ef',scale:2,useCORS:true,logging:false}).then(function(canvas){
+    var link=document.createElement('a');
+    link.download='旅游搭子测试_'+(document.getElementById('resultType').textContent||'结果')+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    toast.textContent='截图已保存';
+    setTimeout(function(){toast.classList.remove('show')},2000);
+  }).catch(function(err){
+    toast.textContent='截图失败，请手动截屏';
+    setTimeout(function(){toast.classList.remove('show')},2000);
+  });
+}
+
+function restart(){TBQuiz.start();showPage('welcome')}
+
+document.addEventListener('keydown',function(e){
+  if(document.getElementById('quiz').style.display==='block'){
+    if(e.key>='1'&&e.key<='4'){var idx=parseInt(e.key)-1;var items=document.querySelectorAll('.opt-item');if(items[idx])selectOption(idx)}
+    else if(e.key==='ArrowLeft')goBack();
+  }
+});
+
+(function init(){
+  var types=TB_DATA.types,chips='';
+  for(var i=0;i<Math.min(12,types.length);i++){
+    var p=TB_DATA.profiles[types[i]]||{};
+    chips+='<span class="type-chip">'+(p.emoji||'🎯')+' '+types[i]+'</span>';
+  }
+  chips+='<span class="type-chip">...共48种</span>';
+  document.getElementById('welcomeTypes').innerHTML=chips;
+})();
+</script>
+</body>
+</html>
