@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lydz",
+  "compatibility_date": "2026-07-31",
+  "assets": {
+    "directory": ".",
+    "exclude": ["node_modules/**"]
+  },
+  "compatibility_flags": ["nodejs_compat"]
+}
