@@ -3,7 +3,7 @@
  */
 
 export function render(container, data) {
-  const types = data.types.slice();
+  const types = Object.keys(data.personalities || {}).slice();
   // Fisher-Yates 洗牌
   for (let i = types.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

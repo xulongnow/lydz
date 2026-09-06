@@ -554,6 +554,66 @@ body {
   .quiz-progress-text { font-size: 11px; }
 }
 
+/* ========== Ambiguity hint ========== */
+.ambiguity-box {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.ambiguity-high {
+  background: #fdf2e9;
+  border-left: 3px solid var(--orange);
+  color: #8b4513;
+}
+.ambiguity-medium {
+  background: #f0f7fb;
+  border-left: 3px solid var(--blue);
+  color: #2c5570;
+}
+.ambiguity-low {
+  background: #f0f5ed;
+  border-left: 3px solid #6b9e75;
+  color: #3d6b45;
+}
+
+/* ========== Radar chart ========== */
+.radar-wrap {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--paper);
+  border-radius: 12px;
+}
+.radar-chart {
+  margin-top: 8px;
+}
+
+/* ========== Dimension interpretation ========== */
+.dim-interpretation {
+  margin-bottom: 24px;
+}
+.dim-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dim-list li {
+  padding: 10px 14px;
+  background: var(--paper);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.dim-list li::before {
+  content: '\2022';
+  color: var(--orange);
+  font-weight: 900;
+  margin-right: 8px;
+}
+
 /* ========== Accessibility ========== */
 .sr-only {
   position: absolute;

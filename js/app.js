@@ -9,7 +9,8 @@ import * as welcomeUI from './ui/welcome.js';
 import * as quizUI from './ui/quiz.js';
 import * as resultUI from './ui/result.js';
 
-const TOTAL_STEPS = 18;
+const MIN_STEPS = 12;
+const MAX_STEPS = 24;
 
 let state = null;
 let data = null;
@@ -17,7 +18,7 @@ let data = null;
 export async function init() {
   const res = await fetch('./data/quiz-data.json');
   data = await res.json();
-  engine.setRulePriority(data.questions, data.types);
+  engine.setRulePriority(data.questions, Object.keys(data.personalities || {}));
   welcomeUI.render(document.getElementById('welcome'), data);
   welcomeUI.bindEvents({ onStart: startQuiz });
   quizUI.bindEvents(handlers);
@@ -33,50 +34,41 @@ export async function init() {
 }
 
 function startQuiz() {
-  state = {
-    scores: {},
-    history: [],
-    step: 0,
-    currentQ: null,
-    shuffledOpts: null,
-    seenIds: [],
-  };
+  state = engine.initState();
+  state.userVector = {};
+  for (const d of data.dims) state.userVector[d] = 0;
   selectNext();
   showPage('quiz');
   renderQuiz();
 }
 
 function selectNext() {
-  if (state.step >= TOTAL_STEPS) {
-    state.currentQ = null;
-    return;
-  }
-  state.currentQ = engine.selectNext(
+  const nextQ = engine.selectNext(
     data.questions,
     data.dims,
-    state.history.map((h) => h.qId),
-    state.seenIds,
-    state.scores,
-    state.step,
+    data.personalities,
+    state,
     Math.random
   );
-  if (!state.currentQ) return;
-  state.shuffledOpts = engine.shuffleOptions(state.currentQ.opts);
-  if (state.seenIds.indexOf(state.currentQ.id) === -1) {
-    state.seenIds.push(state.currentQ.id);
+  state.currentQ = nextQ || null;
+  if (state.currentQ) {
+    state.shuffledOpts = engine.shuffleOptions(state.currentQ.opts);
   }
 }
 
 function getCurrent() {
   if (!state || !state.currentQ) return null;
+  const answered = state.answeredIds.length;
+  const totalDisplay = answered < MIN_STEPS ? MIN_STEPS : (answered >= MAX_STEPS ? answered : MAX_STEPS);
   return {
-    step: state.step + 1,
-    total: TOTAL_STEPS,
-    progress: Math.round((state.step / TOTAL_STEPS) * 100),
+    step: answered + 1,
+    total: totalDisplay,
+    progress: Math.round((answered / MAX_STEPS) * 100),
     stem: state.currentQ.stem,
     dim: state.currentQ.dim,
+    dimLabel: data.dimLabels && data.dimLabels[state.currentQ.dim] ? state.currentQ.dim : state.currentQ.dim,
     options: state.shuffledOpts.map((o) => o.text),
-    canGoBack: state.history.length > 0,
+    canGoBack: state.answeredIds.length > 0,
     prevSelectedIdx:
       state._prevSelectedIdx !== undefined ? state._prevSelectedIdx : -1,
   };
@@ -85,8 +77,17 @@ function getCurrent() {
 function renderQuiz() {
   const q = getCurrent();
   if (!q || !state.currentQ) {
-    showResult();
-    return;
+    // 检查是否满足终止条件
+    const result = engine.determineResult(
+      engine.buildUserVector(state.dimHistory, data.dims),
+      data.personalities,
+      data.dims
+    );
+    const term = engine.shouldTerminate(state, result, data.dims);
+    if (term.terminate || !state.currentQ) {
+      showResult();
+      return;
+    }
   }
   quizUI.render(document.getElementById('quiz'), q);
 }
@@ -96,31 +97,59 @@ function handleSelect(displayedIdx) {
   state._prevSelectedIdx = undefined;
   const opt = state.shuffledOpts[displayedIdx];
   const origIdx = state.currentQ.opts.indexOf(opt);
-  engine.applyAnswer(state.scores, state.currentQ, origIdx);
+  engine.applyAnswer(state, state.currentQ, origIdx);
+
+  // 记录答题历史（用于分享链接回放和返回上一题）
+  if (!state.history) state.history = [];
   state.history.push({
     qId: state.currentQ.id,
-    origIdx,
+    origIdx: origIdx,
     shuffledOpts: state.shuffledOpts,
     currentQ: state.currentQ,
   });
-  state.step++;
+
+  // 更新 userVector
+  state.userVector = engine.buildUserVector(state.dimHistory, data.dims);
+
+  // 检查终止条件
+  const result = engine.determineResult(state.userVector, data.personalities, data.dims);
+  const term = engine.shouldTerminate(state, result, data.dims);
+
+  if (term.terminate) {
+    state.currentQ = null;
+    showResult();
+    return;
+  }
+
   selectNext();
   renderQuiz();
 }
 
 function handleBack() {
-  if (!state || state.history.length === 0) return;
-  const last = state.history.pop();
-  const w = last.currentQ.opts[last.origIdx].weights;
-  for (let i = 0; i < w.length; i++) {
-    state.scores[w[i][0]] = (state.scores[w[i][0]] || 0) - w[i][1];
-    if (state.scores[w[i][0]] <= 0) delete state.scores[w[i][0]];
+  if (!state || state.answeredIds.length === 0) return;
+  const lastQId = state.answeredIds[state.answeredIds.length - 1];
+  const lastQ = data.questions.find((q) => q.id === lastQId);
+  if (!lastQ) return;
+
+  // 找到最后一次答该题时的选项
+  const lastHist = state.history ? state.history[state.history.length - 1] : null;
+  if (lastHist && lastHist.qId === lastQId) {
+    engine.undoAnswer(state, lastQ, lastHist.origIdx);
+    state.history.pop();
+    state.currentQ = lastQ;
+    state.shuffledOpts = lastHist.shuffledOpts;
+    const prevOpt = lastQ.opts[lastHist.origIdx];
+    state._prevSelectedIdx = lastHist.shuffledOpts.indexOf(prevOpt);
+  } else {
+    // fallback: 直接减少历史
+    const hist = state.dimHistory[lastQ.dim];
+    if (hist && hist.length > 0) hist.pop();
+    state.answeredIds.pop();
+    state.step--;
+    state.userVector = engine.buildUserVector(state.dimHistory, data.dims);
+    state.currentQ = lastQ;
+    state.shuffledOpts = engine.shuffleOptions(lastQ.opts);
   }
-  state.step--;
-  state.currentQ = last.currentQ;
-  state.shuffledOpts = last.shuffledOpts;
-  const prevOpt = last.currentQ.opts[last.origIdx];
-  state._prevSelectedIdx = last.shuffledOpts.indexOf(prevOpt);
   renderQuiz();
 }
 
@@ -141,66 +170,81 @@ function showResult() {
     },
     onRetry: handleRestart,
   });
-  // 更新 URL hash 为分享链接
   history.replaceState(null, '', r.shareLink);
 }
 
 function buildResult() {
-  if (!state || state.step < 1) return null;
-  const w = engine.calcWinner(state.scores);
-  const answeredQs = state.history.map((h) => h.currentQ);
-  const rate = engine.matchRate(state.scores, w.winner, answeredQs);
-  const profile = data.profiles[w.winner] || {
+  if (!state || state.answeredIds.length < 1) return null;
+  const userVector = engine.buildUserVector(state.dimHistory, data.dims);
+  const result = engine.determineResult(userVector, data.personalities, data.dims);
+  const profile = data.profiles[result.winner] || {
     emoji: '🎯',
     tagline: '神秘旅人',
     desc: '你的旅行风格独一无二。',
     buddy: [],
   };
-  const ranked = Object.keys(state.scores)
-    .map((k) => ({ type: k, score: state.scores[k] }))
-    .sort((a, b) => b.score - a.score);
-  const buddies = (profile.buddy || []).map((name) => {
-    const p = data.profiles[name] || { emoji: '🧳', tagline: '' };
-    return { name, emoji: p.emoji, tagline: p.tagline };
-  });
-  const path = state.history.map((h) => [h.qId, h.origIdx]);
-  const share = encodeShare(w.winner, path);
+
+  // 使用向量空间距离计算最佳搭子（动态互补）
+  const buddyName = engine.findBuddy(result.winner, data.personalities, data.dims);
+  const buddyProfile = buddyName ? (data.profiles[buddyName] || { emoji: '🧳', tagline: '' }) : null;
+  const buddies = buddyProfile ? [{ name: buddyName, emoji: buddyProfile.emoji, tagline: buddyProfile.tagline }] : [];
+
+  // 如果动态计算的搭子为空，回退到profile中的buddy
+  if (buddies.length === 0 && profile.buddy && profile.buddy.length > 0) {
+    for (const name of profile.buddy) {
+      const p = data.profiles[name];
+      if (p) buddies.push({ name, emoji: p.emoji, tagline: p.tagline });
+    }
+  }
+
+  const path = state.history ? state.history.map((h) => [h.qId, h.origIdx]) : [];
+  const share = encodeShare(result.winner, path);
+
+  // 雷达图数据
+  const radarData = data.dims.map(d => ({
+    dim: d,
+    label: data.dimLabels && data.dimLabels[d] ? `${data.dimLabels[d].positive}/${data.dimLabels[d].negative}` : d,
+    score: userVector[d] || 0,
+  }));
+
+  // 维度解读
+  const dimInterpretation = engine.generateDimInterpretation(userVector, data.dimLabels || {});
+
   return {
-    winner: w.winner,
-    resolvedBy: w.resolvedBy,
-    matchRate: rate,
+    winner: result.winner,
+    matchRate: result.top3[0].similarity,
     profile,
     buddies,
     shareLink: share,
-    top5: ranked.slice(0, 5),
-    totalQuestions: TOTAL_STEPS,
+    top3: result.top3,
+    confidence: result.confidence,
+    ambiguity: result.ambiguity,
+    presentation: result.presentation,
+    userVector,
+    radarData,
+    dimInterpretation,
+    totalQuestions: state.answeredIds.length,
   };
 }
 
 function replay(decoded) {
-  state = {
-    scores: {},
-    history: [],
-    step: 0,
-    currentQ: null,
-    shuffledOpts: null,
-    seenIds: [],
-  };
-  engine.setRulePriority(data.questions, data.types);
+  state = engine.initState();
+  for (const d of data.dims) state.userVector[d] = 0;
+
+  if (!state.history) state.history = [];
+
   for (let i = 0; i < decoded.p.length; i++) {
     const qId = decoded.p[i][0];
     const origIdx = decoded.p[i][1];
     const q = data.questions.find((qq) => qq.id === qId);
     if (!q) continue;
-    engine.applyAnswer(state.scores, q, origIdx);
+    engine.applyAnswer(state, q, origIdx);
     state.history.push({
       qId,
       origIdx,
       shuffledOpts: q.opts,
       currentQ: q,
     });
-    if (state.seenIds.indexOf(qId) === -1) state.seenIds.push(qId);
-    state.step++;
   }
   showResult();
 }

@@ -1,0 +1,17 @@
+{
+  "totalQuestions": 342,
+  "personalityCount": 48,
+  "perfectCoverage": 48,
+  "noisyCoverage": 48,
+  "selfHitRate": 93.75,
+  "distribution": {
+    "min": 3,
+    "max": 7,
+    "avg": 5
+  },
+  "reverseCheckTriggered": true,
+  "adaptiveDifferent": true,
+  "avgSteps": 18.07,
+  "avgConfidence": 0.275,
+  "passed": true
+}

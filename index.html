@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="48种旅行人格，176道场景题，CAT自适应精选18题，3分钟发现你在旅途中的真实模样。">
+<meta name="description" content="48种旅行人格，342道场景题，CAT自适应精选12-24题，3分钟发现你在旅途中的真实模样。">
 <meta name="keywords" content="旅游搭子测试,旅行人格,性格测试,旅游测试,旅行搭子">
 <meta name="theme-color" content="#e8743b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="旅游搭子测试">
 <meta property="og:title" content="旅游搭子测试 · 发现你的旅行人格">
-<meta property="og:description" content="48种旅行人格，176道场景题，CAT自适应精选18题，3分钟发现你在旅途中的真实模样。">
+<meta property="og:description" content="48种旅行人格，342道场景题，CAT自适应精选12-24题，3分钟发现你在旅途中的真实模样。">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="zh_CN">
 <meta itemprop="name" content="旅游搭子测试">
-<meta itemprop="description" content="48种旅行人格，176道场景题，CAT自适应精选18题，发现你在旅途中的真实模样。">
+<meta itemprop="description" content="48种旅行人格，342道场景题，CAT自适应精选12-24题，发现你在旅途中的真实模样。">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self';">
 <title>旅游搭子测试 · 发现你的旅行人格</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23e8743b'/%3E%3Cpath d='M50 16 L60 50 L50 84 L40 50 Z' fill='%23fffaf2'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%232c3e50'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='%23fffaf2' stroke-width='3'/%3E%3C/svg%3E">
@@ -35,10 +35,10 @@
     <div class="welcome-card fade-in">
       <div class="welcome-stamp">TRAVEL BUDDY QUIZ</div>
       <h1 class="welcome-title">旅游搭子测试</h1>
-      <p class="welcome-sub">48种旅行人格，176道场景题<br>发现你在旅途中的真实模样</p>
+      <p class="welcome-sub">48种旅行人格，342道场景题<br>发现你在旅途中的真实模样</p>
       <div class="welcome-types" id="welcomeTypes" aria-live="polite"></div>
       <button class="start-btn" type="button">出发 &rarr;</button>
-      <div class="welcome-meta"><span>18道精选题</span>&middot;<span>约3分钟</span>&middot;<span>CAT自适应</span></div>
+      <div class="welcome-meta"><span>12-24道自适应</span>&middot;<span>约3分钟</span>&middot;<span>CAT自适应</span></div>
     </div>
   </section>
 
@@ -84,10 +84,16 @@
           <div class="rate-label"><strong>匹配度</strong><br>你与这个旅行人格的契合程度</div>
         </div>
         <p class="result-desc" id="resultDesc"></p>
+        <div class="ambiguity-hint" id="ambiguityHint"></div>
+        <div class="radar-wrap" id="radarWrap">
+          <h3 class="result-section-title">&#10022; 六维雷达</h3>
+          <div class="radar-chart" id="radarChart"></div>
+        </div>
+        <div class="dim-interpretation" id="dimInterpretation"></div>
         <h3 class="result-section-title">&#10022; 最佳搭子</h3>
         <div class="buddy-list" id="buddyList"></div>
-        <h3 class="result-section-title">&#10022; 你的旅行人格 Top5</h3>
-        <div class="top5-list" id="top5List"></div>
+        <h3 class="result-section-title">&#10022; 你的旅行人格 Top3</h3>
+        <div class="top5-list" id="top3List"></div>
       </div>
       <div class="result-actions">
         <button class="action-btn share" id="shareBtn" type="button">截图分享</button>
