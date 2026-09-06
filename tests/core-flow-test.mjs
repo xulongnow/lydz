@@ -123,7 +123,7 @@ console.log('✅ 洗牌功能正常');
 if (history.length >= 2) {
   const last = history[history.length - 1];
   const prevLen = state.answeredIds.length;
-  engine.undoAnswer(state, last.currentQ, last.origIdx);
+  engine.undoAnswer(state, last.currentQ, last.origIdx, data.dims);
   if (state.answeredIds.length !== prevLen - 1) {
     console.error('❌ 撤销后 answeredIds 长度未减 1');
     process.exit(1);

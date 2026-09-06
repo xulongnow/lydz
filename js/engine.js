@@ -21,7 +21,7 @@ const CONFIG = {
   RECENT_SCENE_EXCLUDE: 2,
   MIN_QUESTIONS: 12,
   MAX_QUESTIONS: 24,
-  CONFIDENCE_THRESHOLD: 0.28,
+  CONFIDENCE_THRESHOLD: 0.22,
   DIM_SATURATED_COUNT: 4,
   DIM_SATURATED_VARIANCE: 0.5,
   HIGH_AMBIGUITY_THRESHOLD: 0.25,
@@ -271,10 +271,10 @@ export function selectNext(questions, dims, personalities, state, rng) {
     }
   }
 
-  // 计算信息增益（选项得分方差）
-  pool.forEach(q => {
+  // 计算信息增益（选项得分方差）—— 使用局部副本，不污染原始数据
+  pool = pool.map(q => {
     const scores = q.opts.map(o => o.score);
-    q.infoGain = varianceOf(scores);
+    return { ...q, infoGain: varianceOf(scores) };
   });
   pool.sort((a, b) => b.infoGain - a.infoGain);
 
@@ -336,7 +336,7 @@ function getDims(data) {
 }
 
 // ===== 撤销答案（用于返回上一题） =====
-export function undoAnswer(state, q, choiceIdx) {
+export function undoAnswer(state, q, choiceIdx, dims) {
   const chosen = q.opts[choiceIdx];
   if (!chosen) return;
 
@@ -351,7 +351,7 @@ export function undoAnswer(state, q, choiceIdx) {
   }
   state.answeredIds.pop();
   state.step--;
-  state.userVector = buildUserVector(state.dimHistory, ['D1', 'D2', 'D3', 'D4', 'D5', 'D6']);
+  state.userVector = buildUserVector(state.dimHistory, dims);
 }
 
 // ===== 选项洗牌 =====

@@ -11,13 +11,19 @@ function renderRadar(container, radarData, dimLabels) {
   const radius = 90;
   const n = 6;
   const angleOffset = -Math.PI / 2;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
   function point(i, r) {
     const angle = angleOffset + (i * 2 * Math.PI) / n;
     return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
   }
 
-  let svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;margin:0 auto;">`;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.style.display = 'block';
+  svg.style.margin = '0 auto';
 
   // 背景网格（3层）
   for (let layer = 1; layer <= 3; layer++) {
@@ -27,16 +33,37 @@ function renderRadar(container, radarData, dimLabels) {
       const [x, y] = point(i % n, r);
       d += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)}`;
     }
-    svg += `<path d="${d}Z" fill="none" stroke="#e0d8c8" stroke-width="1"/>`;
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', d + 'Z');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#e0d8c8');
+    path.setAttribute('stroke-width', '1');
+    svg.appendChild(path);
   }
 
   // 轴线和标签
   for (let i = 0; i < n; i++) {
     const [x, y] = point(i, radius);
-    svg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e0d8c8" stroke-width="1"/>`;
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', String(cx));
+    line.setAttribute('y1', String(cy));
+    line.setAttribute('x2', String(x.toFixed(1)));
+    line.setAttribute('y2', String(y.toFixed(1)));
+    line.setAttribute('stroke', '#e0d8c8');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+
     const [lx, ly] = point(i, radius + 22);
     const label = radarData[i]?.label || `D${i + 1}`;
-    svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#5a6c7d">${label}</text>`;
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', String(lx.toFixed(1)));
+    text.setAttribute('y', String(ly.toFixed(1)));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', '11');
+    text.setAttribute('fill', '#5a6c7d');
+    text.textContent = label;
+    svg.appendChild(text);
   }
 
   // 数据多边形
@@ -47,18 +74,28 @@ function renderRadar(container, radarData, dimLabels) {
     const [x, y] = point(i, r);
     dataD += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)}`;
   }
-  svg += `<path d="${dataD}Z" fill="rgba(232,116,59,0.2)" stroke="#e8743b" stroke-width="2"/>`;
+  const dataPath = document.createElementNS(SVG_NS, 'path');
+  dataPath.setAttribute('d', dataD + 'Z');
+  dataPath.setAttribute('fill', 'rgba(232,116,59,0.2)');
+  dataPath.setAttribute('stroke', '#e8743b');
+  dataPath.setAttribute('stroke-width', '2');
+  svg.appendChild(dataPath);
 
   // 数据点
   for (let i = 0; i < n; i++) {
     const score = radarData[i]?.score || 0;
     const r = ((score + 1) / 2) * radius;
     const [x, y] = point(i, r);
-    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#e8743b"/>`;
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', String(x.toFixed(1)));
+    circle.setAttribute('cy', String(y.toFixed(1)));
+    circle.setAttribute('r', '3');
+    circle.setAttribute('fill', '#e8743b');
+    svg.appendChild(circle);
   }
 
-  svg += '</svg>';
-  container.innerHTML = svg;
+  container.innerHTML = '';
+  container.appendChild(svg);
 }
 
 export function render(container, r, data) {
@@ -87,13 +124,20 @@ export function render(container, r, data) {
   // 模糊度提示
   if (ambiguityHint) {
     const pres = r.presentation || {};
+    ambiguityHint.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'ambiguity-box';
     if (r.ambiguity === 'high') {
-      ambiguityHint.innerHTML = `<div class="ambiguity-box ambiguity-high">${pres.message || `你的旅行人格在 ${pres.primary} 和 ${pres.secondary} 之间摇摆`}</div>`;
+      box.classList.add('ambiguity-high');
+      box.textContent = pres.message || `你的旅行人格在 ${pres.primary} 和 ${pres.secondary} 之间摇摆`;
     } else if (r.ambiguity === 'medium') {
-      ambiguityHint.innerHTML = `<div class="ambiguity-box ambiguity-medium">${pres.hint || `你也带有 ${pres.secondary || r.top3[1]?.name} 的特质`}</div>`;
+      box.classList.add('ambiguity-medium');
+      box.textContent = pres.hint || `你也带有 ${pres.secondary || r.top3[1]?.name} 的特质`;
     } else {
-      ambiguityHint.innerHTML = `<div class="ambiguity-box ambiguity-low">结果比较明确，你就是这个类型</div>`;
+      box.classList.add('ambiguity-low');
+      box.textContent = '结果比较明确，你就是这个类型';
     }
+    ambiguityHint.appendChild(box);
   }
 
   // 雷达图

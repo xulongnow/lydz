@@ -18,10 +18,14 @@ export function encodeShare(resultId, path) {
 export function decodeShare(hash) {
   const m = hash.match(/^#s=([A-Za-z0-9_-]+)/);
   if (!m) return null;
-  const base64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
-  const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
-  return JSON.parse(new TextDecoder().decode(bytes));
+  try {
+    const base64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch (e) {
+    return null;
+  }
 }
 
 /** 异步截图（html2canvas 按需加载） */

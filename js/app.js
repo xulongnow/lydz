@@ -134,7 +134,7 @@ function handleBack() {
   // 找到最后一次答该题时的选项
   const lastHist = state.history ? state.history[state.history.length - 1] : null;
   if (lastHist && lastHist.qId === lastQId) {
-    engine.undoAnswer(state, lastQ, lastHist.origIdx);
+    engine.undoAnswer(state, lastQ, lastHist.origIdx, data.dims);
     state.history.pop();
     state.currentQ = lastQ;
     state.shuffledOpts = lastHist.shuffledOpts;
@@ -238,6 +238,7 @@ function replay(decoded) {
     const origIdx = decoded.p[i][1];
     const q = data.questions.find((qq) => qq.id === qId);
     if (!q) continue;
+    if (origIdx < 0 || origIdx >= q.opts.length) continue;
     engine.applyAnswer(state, q, origIdx);
     state.history.push({
       qId,
