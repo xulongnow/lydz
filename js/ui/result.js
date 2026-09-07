@@ -2,6 +2,26 @@
  * 结果页渲染 + 事件绑定 v8
  */
 
+// P0-4 缓解方案 C：近距离配对提示文案
+const CLOSE_PAIR_MESSAGES = {
+  '出片者-行走的攻略': '出片者和行走的攻略这两种旅行风格非常相似，你可能同时具备两者的特质',
+  '行走的攻略-出片者': '行走的攻略和出片者这两种旅行风格非常相似，你可能同时具备两者的特质',
+  '美食雷达-购物狂魔': '美食雷达和购物狂魔对旅行中的"发现感"有强烈共鸣',
+  '购物狂魔-美食雷达': '购物狂魔和美食雷达对旅行中的"发现感"有强烈共鸣',
+  '中餐续命者-补水狂魔': '中餐续命者和补水狂魔在饮食偏好上非常接近',
+  '补水狂魔-中餐续命者': '补水狂魔和中餐续命者在饮食偏好上非常接近',
+  '出门困难户-婴幼儿': '出门困难户和婴幼儿都属于低行动力的旅行风格',
+  '婴幼儿-出门困难户': '婴幼儿和出门困难户都属于低行动力的旅行风格',
+  '打卡狂魔-行走的攻略': '打卡狂魔和行走的攻略在旅行目标感上很相似',
+  '行走的攻略-打卡狂魔': '行走的攻略和打卡狂魔在旅行目标感上很相似',
+  '纪录片导演-美食雷达': '纪录片导演和美食雷达都喜欢深挖目的地的细节',
+  '美食雷达-纪录片导演': '美食雷达和纪录片导演都喜欢深挖目的地的细节',
+  '外卖鉴赏家-Wi-Fi搜寻者': '外卖鉴赏家和 Wi-Fi 搜寻者都偏向舒适型旅行',
+  'Wi-Fi搜寻者-外卖鉴赏家': 'Wi-Fi 搜寻者和外卖鉴赏家都偏向舒适型旅行',
+  '特种兵王-购物狂魔': '特种兵王和购物狂魔在行动力和目标感上相近',
+  '购物狂魔-特种兵王': '购物狂魔和特种兵王在行动力和目标感上相近',
+};
+
 let currentHandlers = null;
 
 function renderRadar(container, radarData, dimLabels) {
@@ -138,6 +158,20 @@ export function render(container, r, data) {
       box.textContent = '结果比较明确，你就是这个类型';
     }
     ambiguityHint.appendChild(box);
+
+    // P0-4 缓解方案 C：近距离配对额外提示
+    const pairKey = `${r.winner}-${r.top3[1]?.name || ''}`;
+    const closeMsg = CLOSE_PAIR_MESSAGES[pairKey];
+    if (closeMsg) {
+      const closeBox = document.createElement('div');
+      closeBox.className = 'ambiguity-box close-pair-hint';
+      closeBox.style.marginTop = '8px';
+      closeBox.style.background = '#fff8e1';
+      closeBox.style.borderColor = '#ffcc80';
+      closeBox.style.color = '#e65100';
+      closeBox.textContent = closeMsg;
+      ambiguityHint.appendChild(closeBox);
+    }
   }
 
   // 雷达图

@@ -24,7 +24,7 @@ const CONFIG = {
   CONFIDENCE_THRESHOLD: 0.22,
   DIM_SATURATED_COUNT: 4,
   DIM_SATURATED_VARIANCE: 0.5,
-  HIGH_AMBIGUITY_THRESHOLD: 0.25,
+  HIGH_AMBIGUITY_THRESHOLD: 0.22,
   MEDIUM_AMBIGUITY_THRESHOLD: 0.45,
 };
 
@@ -79,6 +79,25 @@ function varianceOf(arr) {
   if (n === 0) return 0;
   const mean = arr.reduce((a, b) => a + b, 0) / n;
   return arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n;
+}
+
+// ===== 新增：计算对两个候选人格的期望得分差异区分度 =====
+function expectedScoreDiscrimination(scores, pA, pB, temp = 0.5) {
+  const softmax = (vals) => {
+    const exps = vals.map(v => Math.exp(v / temp));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return exps.map(e => e / sum);
+  };
+
+  const weightedA = scores.map(s => s * pA);
+  const probsA = softmax(weightedA);
+  const expA = probsA.reduce((sum, p, i) => sum + p * scores[i], 0);
+
+  const weightedB = scores.map(s => s * pB);
+  const probsB = softmax(weightedB);
+  const expB = probsB.reduce((sum, p, i) => sum + p * scores[i], 0);
+
+  return Math.abs(expA - expB);
 }
 
 // ===== 欧氏距离 =====
@@ -271,10 +290,30 @@ export function selectNext(questions, dims, personalities, state, rng) {
     }
   }
 
-  // 计算信息增益（选项得分方差）—— 使用局部副本，不污染原始数据
+  // === 改造：混合信息增益（方差 + Top2 区分度）===
+  const currentVec = buildUserVector(dimHistory, dims);
+  const currentResult = determineResult(currentVec, personalities, dims);
+  const top2 = currentResult.top3.slice(0, 2);
+
+  const ALPHA = 0.4;
+  const BETA = 0.6;
+
   pool = pool.map(q => {
     const scores = q.opts.map(o => o.score);
-    return { ...q, infoGain: varianceOf(scores) };
+    const varGain = varianceOf(scores);
+
+    let discGain = 0;
+    if (top2.length >= 2) {
+      const pA = personalities[top2[0].name][q.dim];
+      const pB = personalities[top2[1].name][q.dim];
+      discGain = expectedScoreDiscrimination(scores, pA, pB);
+    }
+
+    const normVar = varGain / 0.625;
+    const normDisc = discGain / 1.3;
+    const infoGain = ALPHA * normVar + BETA * normDisc;
+
+    return { ...q, infoGain, varGain, discGain };
   });
   pool.sort((a, b) => b.infoGain - a.infoGain);
 
@@ -347,6 +386,11 @@ export function undoAnswer(state, q, choiceIdx, dims) {
     const idx = hist.findIndex(h => h.step === stepToRemove);
     if (idx >= 0) {
       hist.splice(idx, 1);
+      // === 新增：重新编排该维度后续记录的 step 序号 ===
+      for (let i = idx; i < hist.length; i++) {
+        hist[i].step = hist[i].step - 1;
+      }
+      // === 新增结束 ===
     }
   }
   state.answeredIds.pop();
