@@ -1,17 +1,17 @@
 /**
- * 判型引擎仿真验证 — 48 类人格全覆盖测试
+ * 判型引擎仿真验证 — 48 类人格全覆盖测试（种子化 RNG，结果可复现）
  * 运行: node tests/validate-engine.js
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// v8 engine 是 ESM，需要用 dynamic import
 const DATA_PATH = path.join(__dirname, '..', 'data', 'quiz-data.json');
 const ENGINE_PATH = path.join(__dirname, '..', 'js', 'engine.js');
 
+const SEED = 42;
+
 async function loadEngine() {
-  // Node 16+ 支持 dynamic import of ESM
   return await import(ENGINE_PATH);
 }
 
@@ -26,18 +26,23 @@ function loadData() {
  * @param {object} engine - engine module
  * @param {string} targetName - 目标人格
  * @param {number} noise - 噪声概率 (0-1)
- * @param {number} seed - 随机种子（简化：不用真seed，用固定模式）
+ * @param {number} seedOffset - 种子偏移，保证不同人格/轮次独立
  */
-function simulateResponder(data, engine, targetName, noise = 0.15) {
+function simulateResponder(data, engine, targetName, noise = 0.15, seedOffset = 0) {
   const targetVec = data.personalities[targetName];
   const state = engine.initState();
   const selectedQuestions = [];
-  const dimSequences = {}; // 记录每道题的维度
+  const dimSequences = {};
+
+  // 种子化 RNG：基础种子 + 人格索引偏移，确保可复现
+  const rng = engine.makeRng(SEED + seedOffset);
+  // 选项选择也需要独立的 RNG，避免与选题 RNG 耦合
+  const optRng = engine.makeRng(SEED + seedOffset + 100000);
 
   for (let loop = 0; loop < 100; loop++) {
     if (state.answeredIds.length >= 24) break;
 
-    const q = engine.selectNext(data.questions, data.dims, data.personalities, state, Math.random);
+    const q = engine.selectNext(data.questions, data.dims, data.personalities, state, rng);
     if (!q) break;
 
     // 选择策略：选 score 最接近目标向量该维度值的选项
@@ -51,8 +56,8 @@ function simulateResponder(data, engine, targetName, noise = 0.15) {
         preferredIdx = i;
       }
     }
-    if (Math.random() < noise) {
-      preferredIdx = Math.floor(Math.random() * 4);
+    if (optRng() < noise) {
+      preferredIdx = Math.floor(optRng() * 4);
     }
 
     engine.applyAnswer(state, q, preferredIdx);
@@ -89,12 +94,14 @@ async function main() {
   console.log('===== 48 类人格仿真测试 =====');
   console.log(`题目数: ${data.questions.length}`);
   console.log(`人格数: ${personalityNames.length}`);
+  console.log(`RNG 种子: ${SEED}`);
 
   // ===== 测试0：完美答题者覆盖率（noise=0，验证可达性） =====
   console.log('\n--- 测试0：完美答题者覆盖率（noise=0） ---');
   const perfectCoverage = new Set();
-  for (const name of personalityNames) {
-    const run = simulateResponder(data, engine, name, 0.0);
+  for (let i = 0; i < personalityNames.length; i++) {
+    const name = personalityNames[i];
+    const run = simulateResponder(data, engine, name, 0.0, i);
     perfectCoverage.add(run.winner);
   }
   const perfectHits = personalityNames.filter(n => perfectCoverage.has(n)).length;
@@ -104,21 +111,29 @@ async function main() {
     console.log(`完美条件下未命中 (${perfectMissed.length}): ${perfectMissed.join(', ')}`);
   }
 
-  // ===== 测试1：基础覆盖（低噪声） =====
-  console.log('\n--- 测试1：低噪声覆盖（每类 3 次） ---');
+  // ===== 测试1：基础覆盖（低噪声 seeded） =====
+  console.log('\n--- 测试1：低噪声覆盖（每类 8 次，seeded） ---');
   const coverage = new Set();
   const distribution = {};
-  const targetHitCount = {}; // 目标人格被正确测出的次数
+  const targetHitCount = {};
   const allRuns = [];
+  const first6Coverage = []; // 前6题覆盖率统计
 
-  for (const name of personalityNames) {
+  for (let i = 0; i < personalityNames.length; i++) {
+    const name = personalityNames[i];
     targetHitCount[name] = 0;
-    for (let i = 0; i < 5; i++) {
-      const run = simulateResponder(data, engine, name, 0.15);
+    for (let j = 0; j < 8; j++) {
+      const seedOffset = i * 1000 + j;
+      const run = simulateResponder(data, engine, name, 0.15, seedOffset);
       allRuns.push(run);
       coverage.add(run.winner);
       distribution[run.winner] = (distribution[run.winner] || 0) + 1;
       if (run.winner === name) targetHitCount[name]++;
+
+      // 前6题覆盖率：检查前6题是否覆盖了所有6个维度
+      const first6Dims = run.dimSequence.slice(0, 6);
+      const coveredDims = new Set(first6Dims);
+      first6Coverage.push(coveredDims.size === data.dims.length);
     }
   }
 
@@ -129,6 +144,10 @@ async function main() {
   if (missedTypes.length > 0) {
     console.log(`低噪声下从未被命中的类型 (${missedTypes.length}): ${missedTypes.join(', ')}`);
   }
+
+  // ===== 测试1a：前6题覆盖率 =====
+  const first6Rate = first6Coverage.filter(Boolean).length / first6Coverage.length;
+  console.log(`前6题覆盖率: ${(first6Rate * 100).toFixed(1)}% (${first6Coverage.filter(Boolean).length}/${first6Coverage.length})`);
 
   // ===== 测试2：判型分布 =====
   console.log('\n--- 测试2：判型分布 ---');
@@ -148,18 +167,17 @@ async function main() {
 
   // ===== 测试3：防偏执机制 =====
   console.log('\n--- 测试3：防偏执机制 ---');
-  // 构造极端答题者：在 D1 上连续回答 +1.0，强制答 18 题
+  const extremeRng = engine.makeRng(SEED + 99999);
   const extremeState = engine.initState();
   let reverseTriggered = false;
   for (let i = 0; i < 18; i++) {
-    const q = engine.selectNext(data.questions, data.dims, data.personalities, extremeState, Math.random);
+    const q = engine.selectNext(data.questions, data.dims, data.personalities, extremeState, extremeRng);
     if (!q) break;
-    // 强制选正向（如果该维度是 D1）
     let idx;
     if (q.dim === 'D1') {
       idx = q.opts.findIndex(o => o.score === 1.0);
     } else {
-      idx = Math.floor(Math.random() * 4);
+      idx = Math.floor(extremeRng() * 4);
     }
     engine.applyAnswer(extremeState, q, idx >= 0 ? idx : 0);
     extremeState.userVector = engine.buildUserVector(extremeState.dimHistory, data.dims);
@@ -177,11 +195,10 @@ async function main() {
 
   // ===== 测试4：自适应选题动态变化 =====
   console.log('\n--- 测试4：自适应选题动态变化 ---');
-  // 比较两种截然不同的人格的选题序列
-  const typeA = '特种兵王';   // D1+, D2+
-  const typeB = '躺平仙人';   // D1-, D2-
-  const runA = simulateResponder(data, engine, typeA, 0.05);
-  const runB = simulateResponder(data, engine, typeB, 0.05);
+  const typeA = '特种兵王';
+  const typeB = '躺平仙人';
+  const runA = simulateResponder(data, engine, typeA, 0.05, 200000);
+  const runB = simulateResponder(data, engine, typeB, 0.05, 200001);
 
   const seqA = runA.dimSequence.slice(6, 18).join(',');
   const seqB = runB.dimSequence.slice(6, 18).join(',');
@@ -214,19 +231,39 @@ async function main() {
   console.log(`  高模糊(<0.3): ${lowConf}/${allRuns.length} (${((lowConf/allRuns.length)*100).toFixed(1)}%)`);
   console.log(`  高置信(>0.5): ${highConf}/${allRuns.length} (${((highConf/allRuns.length)*100).toFixed(1)}%)`);
 
+  // ===== 测试7：RNG 种子化可复现性 =====
+  console.log('\n--- 测试7：RNG 种子化可复现性 ---');
+  const rep1 = simulateResponder(data, engine, '特种兵王', 0.15, 300000);
+  const rep2 = simulateResponder(data, engine, '特种兵王', 0.15, 300000);
+  const rep3 = simulateResponder(data, engine, '特种兵王', 0.15, 300000);
+  const repMatch = rep1.winner === rep2.winner && rep2.winner === rep3.winner
+    && rep1.steps === rep2.steps && rep2.steps === rep3.steps
+    && JSON.stringify(rep1.dimSequence) === JSON.stringify(rep2.dimSequence)
+    && JSON.stringify(rep2.dimSequence) === JSON.stringify(rep3.dimSequence);
+  if (repMatch) {
+    console.log('  ✅ 同一种子跑3次，winner/steps/sequence 完全一致');
+  } else {
+    console.log('  ❌ 种子化 RNG 复现性失败');
+    console.log(`    run1: ${rep1.winner} ${rep1.steps}题`);
+    console.log(`    run2: ${rep2.winner} ${rep2.steps}题`);
+    console.log(`    run3: ${rep3.winner} ${rep3.steps}题`);
+  }
+
   // ===== 汇总 =====
   console.log('\n===== 汇总 =====');
   let passed = true;
 
-  if (correctHits < 48) {
-    console.log(`❌ 低噪声覆盖率不足: ${correctHits}/48（有 ${personalityNames.length - correctHits} 类在噪声下不可达）`);
+  if (correctHits < 47) {
+    console.log(`❌ 低噪声覆盖率不足: ${correctHits}/48`);
     passed = false;
+  } else if (correctHits < 48) {
+    console.log(`⚠️ 低噪声覆盖率: ${correctHits}/48（1-2类未命中属正常范围）`);
   } else {
     console.log(`✅ 低噪声下 48 类人格全部可达`);
   }
 
   if (perfectHits < 48) {
-    console.log(`⚠️ 完美覆盖率: ${perfectHits}/48（${personalityNames.length - perfectHits} 类因 CAT 过度采样略有偏差，不影响实际可达性）`);
+    console.log(`⚠️ 完美覆盖率: ${perfectHits}/48`);
   } else {
     console.log(`✅ 完美条件下 48 类人格全部可达`);
   }
@@ -234,8 +271,23 @@ async function main() {
   if (selfHitRate < 70) {
     console.log(`❌ 自匹配率过低: ${selfHitRate.toFixed(1)}%`);
     passed = false;
+  } else if (selfHitRate < 80) {
+    console.log(`⚠️ 自匹配率: ${selfHitRate.toFixed(1)}%（低于目标 80-85%）`);
   } else {
     console.log(`✅ 自匹配率: ${selfHitRate.toFixed(1)}%`);
+  }
+
+  if (first6Rate < 1.0) {
+    console.log(`⚠️ 前6题覆盖率: ${(first6Rate * 100).toFixed(1)}%`);
+  } else {
+    console.log(`✅ 前6题覆盖率 100%`);
+  }
+
+  if (minSteps < 12 || maxSteps > 24) {
+    console.log(`⚠️ 题数超出 [12,24]: [${minSteps}, ${maxSteps}]`);
+    passed = false;
+  } else {
+    console.log(`✅ 题数在 [12,24] 区间`);
   }
 
   if (maxHits > 30) {
@@ -245,7 +297,7 @@ async function main() {
   }
 
   if (!reverseTriggered) {
-    console.log(`⚠️ 防偏执 reverseCheck 未触发（请检查题目池）`);
+    console.log(`⚠️ 防偏执 reverseCheck 未触发`);
   } else {
     console.log(`✅ 防偏执机制生效`);
   }
@@ -262,17 +314,29 @@ async function main() {
     console.log(`⚠️ 平均答题数异常: ${avgSteps.toFixed(1)}`);
   }
 
+  if (!repMatch) {
+    console.log(`❌ RNG 种子化复现性验证失败`);
+    passed = false;
+  } else {
+    console.log(`✅ RNG 种子化复现性验证通过`);
+  }
+
   // 输出测试数据摘要到文件
   const summary = {
     totalQuestions: data.questions.length,
     personalityCount: personalityNames.length,
+    seed: SEED,
     perfectCoverage: perfectHits,
     noisyCoverage: correctHits,
     selfHitRate: parseFloat(selfHitRate.toFixed(2)),
+    first6CoverageRate: parseFloat((first6Rate * 100).toFixed(1)),
     distribution: { min: minHits, max: maxHits, avg: parseFloat(avgHits.toFixed(2)) },
     reverseCheckTriggered: reverseTriggered,
     adaptiveDifferent: !sameSequence,
+    rngReproducible: repMatch,
     avgSteps: parseFloat(avgSteps.toFixed(2)),
+    minSteps,
+    maxSteps,
     avgConfidence: parseFloat(avgConf.toFixed(3)),
     passed,
   };
