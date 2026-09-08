@@ -222,102 +222,129 @@ export function shouldTerminate(state, result, dims) {
   return { terminate: false };
 }
 
-// ===== 自适应选题 =====
+// ===== 倾向驱动自适应选题（红方 A 方案） =====
+// 核心变更：维度选择由 "Top 人格分歧度 + 不确定性" 驱动，
+// 题内选择改为纯随机，保持探索/利用平衡。
 export function selectNext(questions, dims, personalities, state, rng) {
   const { answeredIds, dimHistory, step } = state;
   const used = new Set(answeredIds);
 
-  // 步骤1：计算每个维度的不确定性
+  // === 探索机制：20% 概率全局随机抽题（防早熟）===
+  if (rng() < CONFIG.RANDOM_PICK_PROB) {
+    const allUnused = questions.filter(q => !used.has(q.id));
+    if (allUnused.length > 0) {
+      return _pickWithDiversity(allUnused, rng, answeredIds, questions, dimHistory);
+    }
+  }
+
+  // === 步骤1：计算每个维度的不确定性（保留原有公式）===
   const uncertainties = {};
   for (const d of dims) {
     const hist = dimHistory[d] || [];
     const count = hist.length;
-    const variance = count > 1
-      ? varianceOf(hist.map(h => h.score))
-      : 1.0;
-    // 答案越极端（|score|大），该维度不确定性越低
-    const meanAbs = count > 0
-      ? hist.reduce((a, h) => a + Math.abs(h.score), 0) / count
-      : 0;
+    const variance = count > 1 ? varianceOf(hist.map(h => h.score)) : 1.0;
+    const meanAbs = count > 0 ? hist.reduce((a, h) => a + Math.abs(h.score), 0) / count : 0;
     uncertainties[d] = (1 / (count + 1)) * (variance + CONFIG.UNCERTAINTY_BASE) * (1 - 0.25 * meanAbs);
   }
 
-  // 步骤2：覆盖补充检查
-  const underCovered = dims.filter(d => {
-    const count = (dimHistory[d] || []).length;
-    return step < CONFIG.COVERAGE_MAX_STEP && count < CONFIG.COVERAGE_MIN_COUNT;
-  });
+  // === 步骤2：计算 Top 人格在各维度上的分歧度 ===
+  const currentVec = buildUserVector(dimHistory, dims);
+  const currentResult = determineResult(currentVec, personalities, dims);
+  const topN = currentResult.top3.slice(0, 4); // 取 Top 4
 
-  let targetDim;
-  if (underCovered.length > 0) {
-    targetDim = underCovered.sort(
-      (a, b) => uncertainties[b] - uncertainties[a]
-    )[0];
-  } else {
-    targetDim = dims.slice().sort(
-      (a, b) => uncertainties[b] - uncertainties[a]
-    )[0];
+  const disagreements = {};
+  for (const d of dims) {
+    const values = topN.map(p => personalities[p.name][d]).filter(v => v !== undefined);
+    if (values.length >= 2) {
+      disagreements[d] = varianceOf(values);
+    } else {
+      disagreements[d] = 0;
+    }
   }
 
-  // 硬限制：如果最近2题都是同一维度，禁止再选该维度
+  // === 步骤2b：Top2 平局打破 ===
+  // 如果当前 Top2 距离极其接近，放大这两个人格分歧最大的维度权重
+  if (currentResult.top3.length >= 2) {
+    const gap = currentResult.top3[1].distance - currentResult.top3[0].distance;
+    if (gap < 0.05) {
+      const top2Names = [currentResult.top3[0].name, currentResult.top3[1].name];
+      let maxDiffDim = dims[0];
+      let maxDiffVal = -1;
+      for (const d of dims) {
+        const v1 = personalities[top2Names[0]][d];
+        const v2 = personalities[top2Names[1]][d];
+        const diff = Math.abs(v1 - v2);
+        if (diff > maxDiffVal) {
+          maxDiffVal = diff;
+          maxDiffDim = d;
+        }
+      }
+      disagreements[maxDiffDim] = (disagreements[maxDiffDim] || 0) + 2.0;
+    }
+  }
+
+  // === 步骤3：维度选择（倾向判断）===
+  const coverages = {};
+  for (const d of dims) coverages[d] = (dimHistory[d] || []).length;
+
+  let dimScores = dims.map(d => {
+    let score;
+    if (step < 6 && coverages[d] < 1) {
+      // 强制覆盖期：优先让每维至少出现 1 次
+      score = 1000 - coverages[d] * 500;
+    } else if (step < 10 && coverages[d] < 2) {
+      // 补充覆盖期：每维至少 2 次
+      score = 100 - coverages[d] * 30;
+    } else {
+      // 正常期：分歧度（区分 Top 人格）+ 不确定性（信息缺口）
+      score = disagreements[d] * 0.6 + uncertainties[d] * 0.4;
+    }
+    return { dim: d, score };
+  });
+
+  // 硬限制：最近 2 题若均为同一维度，禁止再选该维度
   const lastTwo = answeredIds.slice(-2);
   const lastTwoDims = lastTwo.map(id => {
     const q = questions.find(q => q.id === id);
     return q ? q.dim : null;
   }).filter(Boolean);
+
+  dimScores.sort((a, b) => b.score - a.score);
+
+  let targetDim = dimScores[0].dim;
   if (lastTwoDims.length === 2 && lastTwoDims[0] === lastTwoDims[1] && lastTwoDims[0] === targetDim) {
-    const sortedDims = dims.slice().sort((a, b) => uncertainties[b] - uncertainties[a]);
-    for (const d of sortedDims) {
-      if (d !== targetDim) {
-        targetDim = d;
+    for (const ds of dimScores) {
+      if (ds.dim !== targetDim) {
+        targetDim = ds.dim;
         break;
       }
     }
   }
 
-  // 步骤3：同维度内选区分力最强的题
-  let pool = questions.filter(q =>
-    q.dim === targetDim && !used.has(q.id)
-  );
+  // === 步骤4：从倾向维度构造候选池 ===
+  let pool = questions.filter(q => q.dim === targetDim && !used.has(q.id));
 
+  // 若倾向维度无题，回退到次优维度
   if (pool.length === 0) {
-    const sortedDims = dims.slice().sort(
-      (a, b) => uncertainties[b] - uncertainties[a]
-    );
-    for (const d of sortedDims) {
-      pool = questions.filter(q => q.dim === d && !used.has(q.id));
-      if (pool.length > 0) break;
+    for (const ds of dimScores) {
+      if (ds.dim === targetDim) continue;
+      pool = questions.filter(q => q.dim === ds.dim && !used.has(q.id));
+      if (pool.length > 0) {
+        targetDim = ds.dim;
+        break;
+      }
     }
   }
 
-  // === 改造：混合信息增益（方差 + Top2 区分度）===
-  const currentVec = buildUserVector(dimHistory, dims);
-  const currentResult = determineResult(currentVec, personalities, dims);
-  const top2 = currentResult.top3.slice(0, 2);
+  // 若仍无题（题库耗尽），返回 null
+  if (pool.length === 0) return null;
 
-  const ALPHA = 0.4;
-  const BETA = 0.6;
+  return _pickWithDiversity(pool, rng, answeredIds, questions, dimHistory, targetDim);
+}
 
-  pool = pool.map(q => {
-    const scores = q.opts.map(o => o.score);
-    const varGain = varianceOf(scores);
-
-    let discGain = 0;
-    if (top2.length >= 2) {
-      const pA = personalities[top2[0].name][q.dim];
-      const pB = personalities[top2[1].name][q.dim];
-      discGain = expectedScoreDiscrimination(scores, pA, pB);
-    }
-
-    const normVar = varGain / 0.625;
-    const normDisc = discGain / 1.3;
-    const infoGain = ALPHA * normVar + BETA * normDisc;
-
-    return { ...q, infoGain, varGain, discGain };
-  });
-  pool.sort((a, b) => b.infoGain - a.infoGain);
-
-  // 步骤4：防重复检查（sceneTag）
+// 内部辅助：在候选池中随机抽题，同时应用 sceneTag 去重和反向验证增强
+function _pickWithDiversity(pool, rng, answeredIds, questions, dimHistory, targetDim = null) {
+  // sceneTag 去重
   const recentScenes = [];
   for (let i = Math.max(0, answeredIds.length - CONFIG.RECENT_SCENE_EXCLUDE); i < answeredIds.length; i++) {
     const q = questions.find(q => q.id === answeredIds[i]);
@@ -328,29 +355,22 @@ export function selectNext(questions, dims, personalities, state, rng) {
     pool = filteredPool;
   }
 
-  // 步骤5：反向验证题优先
-  const targetDimHist = dimHistory[targetDim] || [];
-  if (targetDimHist.length >= CONFIG.REVERSE_TRIGGER_COUNT) {
-    const recentScores = targetDimHist.slice(-CONFIG.REVERSE_TRIGGER_COUNT).map(h => h.score);
-    const allPositive = recentScores.every(s => s > 0);
-    const allNegative = recentScores.every(s => s < 0);
-    if (allPositive || allNegative) {
-      const reversePool = pool.filter(q => q.reverseCheck);
-      if (reversePool.length > 0) pool = reversePool;
+  // 反向验证题优先（仅当明确指定了 targetDim 时）
+  if (targetDim) {
+    const targetDimHist = dimHistory[targetDim] || [];
+    if (targetDimHist.length >= CONFIG.REVERSE_TRIGGER_COUNT) {
+      const recentScores = targetDimHist.slice(-CONFIG.REVERSE_TRIGGER_COUNT).map(h => h.score);
+      const allPositive = recentScores.every(s => s > 0);
+      const allNegative = recentScores.every(s => s < 0);
+      if (allPositive || allNegative) {
+        const reversePool = pool.filter(q => q.reverseCheck);
+        if (reversePool.length > 0) pool = reversePool;
+      }
     }
   }
 
-  // 步骤6：随机扰动
-  const cutoff = Math.ceil(pool.length * CONFIG.INFO_GAIN_CUTOFF);
-  const ordered = pool.slice(0, cutoff);
-  const random = pool.slice(cutoff);
-
-  if (random.length > 0 && rng() < CONFIG.RANDOM_PICK_PROB) {
-    return random[Math.floor(rng() * random.length)];
-  }
-  const candidates = ordered.length > 0 ? ordered : random;
-  if (candidates.length === 0) return null;
-  return candidates[Math.floor(rng() * Math.min(candidates.length, CONFIG.TOP_CANDIDATES))];
+  // 纯随机抽题
+  return pool[Math.floor(rng() * pool.length)];
 }
 
 // ===== 应用答案 =====
