@@ -3,15 +3,15 @@
   "personalityCount": 48,
   "perfectCoverage": 48,
   "noisyCoverage": 48,
-  "selfHitRate": 89.58,
+  "selfHitRate": 82.92,
   "distribution": {
-    "min": 3,
-    "max": 7,
+    "min": 2,
+    "max": 8,
     "avg": 5
   },
   "reverseCheckTriggered": true,
   "adaptiveDifferent": true,
-  "avgSteps": 16.78,
-  "avgConfidence": 0.251,
+  "avgSteps": 17.33,
+  "avgConfidence": 0.258,
   "passed": true
 }

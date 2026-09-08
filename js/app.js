@@ -16,8 +16,18 @@ let state = null;
 let data = null;
 
 export async function init() {
-  const res = await fetch('./data/quiz-data.json');
-  data = await res.json();
+  let loadedData;
+  try {
+    const res = await fetch('./data/quiz-data.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadedData = await res.json();
+  } catch (e) {
+    console.error(e);
+    const sub = document.querySelector('.welcome-sub');
+    if (sub) sub.textContent = '数据加载失败，请检查网络后刷新页面';
+    return;
+  }
+  data = loadedData;
   engine.setRulePriority(data.questions, Object.keys(data.personalities || {}));
   welcomeUI.render(document.getElementById('welcome'), data);
   welcomeUI.bindEvents({ onStart: startQuiz });
@@ -26,7 +36,7 @@ export async function init() {
   // 检查 URL hash 是否有分享回放
   if (location.hash) {
     const decoded = decodeShare(location.hash);
-    if (decoded && decoded.p && decoded.p.length > 0) {
+    if (decoded && decoded.p && Array.isArray(decoded.p) && decoded.p.length > 0) {
       replay(decoded);
       return;
     }
@@ -60,13 +70,15 @@ function getCurrent() {
   if (!state || !state.currentQ) return null;
   const answered = state.answeredIds.length;
   const totalDisplay = answered < MIN_STEPS ? MIN_STEPS : (answered >= MAX_STEPS ? answered : MAX_STEPS);
+  // progress 基于当前 totalDisplay 而非固定 MAX_STEPS
+  const progress = totalDisplay > 0 ? Math.round((answered / totalDisplay) * 100) : 0;
   return {
     step: answered + 1,
     total: totalDisplay,
-    progress: Math.round((answered / MAX_STEPS) * 100),
+    progress,
     stem: state.currentQ.stem,
     dim: state.currentQ.dim,
-    dimLabel: data.dimLabels && data.dimLabels[state.currentQ.dim] ? state.currentQ.dim : state.currentQ.dim,
+    dimLabel: data.dimLabels && data.dimLabels[state.currentQ.dim] ? data.dimLabels[state.currentQ.dim].positive : state.currentQ.dim,
     options: state.shuffledOpts.map((o) => o.text),
     canGoBack: state.answeredIds.length > 0,
     prevSelectedIdx:
@@ -149,6 +161,10 @@ function handleBack() {
     state.userVector = engine.buildUserVector(state.dimHistory, data.dims);
     state.currentQ = lastQ;
     state.shuffledOpts = engine.shuffleOptions(lastQ.opts);
+    // 修复：fallback 也需要同步 history
+    if (state.history && state.history.length > 0) {
+      state.history.pop();
+    }
   }
   renderQuiz();
 }
@@ -234,8 +250,10 @@ function replay(decoded) {
   if (!state.history) state.history = [];
 
   for (let i = 0; i < decoded.p.length; i++) {
-    const qId = decoded.p[i][0];
-    const origIdx = decoded.p[i][1];
+    const item = decoded.p[i];
+    if (!Array.isArray(item) || item.length < 2) continue;
+    const qId = item[0];
+    const origIdx = item[1];
     const q = data.questions.find((qq) => qq.id === qId);
     if (!q) continue;
     if (origIdx < 0 || origIdx >= q.opts.length) continue;
@@ -260,15 +278,17 @@ function showPage(id) {
 }
 
 // 键盘导航
+const quizEl = document.getElementById('quiz');
 document.addEventListener('keydown', (e) => {
-  const quizEl = document.getElementById('quiz');
-  if (quizEl && quizEl.style.display === 'block') {
-    if (e.key >= '1' && e.key <= '4') {
-      const idx = parseInt(e.key, 10) - 1;
-      handleSelect(idx);
-    } else if (e.key === 'ArrowLeft') {
-      handleBack();
-    }
+  if (!quizEl || quizEl.style.display !== 'block') return;
+  if (!state || !state.shuffledOpts) return;
+
+  const maxIdx = state.shuffledOpts.length;
+  const keyNum = parseInt(e.key, 10);
+  if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= maxIdx) {
+    handleSelect(keyNum - 1);
+  } else if (e.key === 'ArrowLeft') {
+    handleBack();
   }
 });
 

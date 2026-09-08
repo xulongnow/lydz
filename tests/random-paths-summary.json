@@ -1,0 +1,37 @@
+{
+  "random": {
+    "runCount": 100,
+    "steps": {
+      "min": 12,
+      "max": 24,
+      "avg": 18.3,
+      "ranges": {
+        "12": 19,
+        "13-15": 16,
+        "16-18": 19,
+        "19-21": 10,
+        "22-24": 36
+      }
+    },
+    "termination": {
+      "confidence": 65,
+      "max_questions": 35
+    },
+    "crashed": 0,
+    "top5Pct": 41,
+    "personalityCoverage": 34
+  },
+  "targeted": {
+    "runCount": 240,
+    "coverage": 48,
+    "selfHitRate": 81.7,
+    "avgSteps": 17,
+    "distribution": {
+      "min": 1,
+      "max": 9,
+      "avg": 5
+    },
+    "top5Pct": 15.8
+  },
+  "passed": true
+}

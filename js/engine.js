@@ -1,5 +1,6 @@
 /**
- * CAT 自适应出题引擎 v8 — 纯函数集合，零 DOM 依赖
+ * CAT 自适应出题引擎 v9 — 倾向驱动 + 随机选题
+ * 纯函数集合，零 DOM 依赖
  * 基于六维向量 + 欧氏距离的判型算法
  * 可 Node.js 直接单元测试
  */
@@ -11,19 +12,36 @@ const CONFIG = {
   MID_DECAY_END: 10,
   MID_DECAY_FACTOR: 0.8,
   LATE_FACTOR: 1.0,
+
+  // 覆盖补充
   COVERAGE_MIN_COUNT: 1,
   COVERAGE_MAX_STEP: 6,
+
+  // 不确定性计算
   UNCERTAINTY_BASE: 0.5,
+
+  // 反向验证触发
   REVERSE_TRIGGER_COUNT: 3,
-  INFO_GAIN_CUTOFF: 0.8,
-  RANDOM_PICK_PROB: 0.2,
-  TOP_CANDIDATES: 3,
-  RECENT_SCENE_EXCLUDE: 2,
+
+  // 探索/利用平衡：前期有概率不从最优维度选题
+  EXPLORE_PROB: 0.15,
+  EXPLORE_MAX_STEP: 8,
+
+  // 连续同维度限制
+  MAX_CONSECUTIVE_SAME_DIM: 2,
+
+  // Layer 阈值（激活 layer 字段）
+  LAYER_CORE_MAX_STEP: 6,
+  LAYER_SELECT_MAX_STEP: 12,
+
+  // 终止条件
   MIN_QUESTIONS: 12,
   MAX_QUESTIONS: 24,
   CONFIDENCE_THRESHOLD: 0.22,
-  DIM_SATURATED_COUNT: 4,
+  DIM_SATURATED_COUNT: 3,      // 从4降到3，使其真正可达
   DIM_SATURATED_VARIANCE: 0.5,
+
+  // 模糊度阈值
   HIGH_AMBIGUITY_THRESHOLD: 0.22,
   MEDIUM_AMBIGUITY_THRESHOLD: 0.45,
 };
@@ -81,25 +99,6 @@ function varianceOf(arr) {
   return arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n;
 }
 
-// ===== 新增：计算对两个候选人格的期望得分差异区分度 =====
-function expectedScoreDiscrimination(scores, pA, pB, temp = 0.5) {
-  const softmax = (vals) => {
-    const exps = vals.map(v => Math.exp(v / temp));
-    const sum = exps.reduce((a, b) => a + b, 0);
-    return exps.map(e => e / sum);
-  };
-
-  const weightedA = scores.map(s => s * pA);
-  const probsA = softmax(weightedA);
-  const expA = probsA.reduce((sum, p, i) => sum + p * scores[i], 0);
-
-  const weightedB = scores.map(s => s * pB);
-  const probsB = softmax(weightedB);
-  const expB = probsB.reduce((sum, p, i) => sum + p * scores[i], 0);
-
-  return Math.abs(expA - expB);
-}
-
 // ===== 欧氏距离 =====
 function euclideanDistance(v1, v2, dims) {
   let sum = 0;
@@ -130,7 +129,11 @@ export function determineResult(userVector, personalities, dims) {
   const winner = top3[0];
   const runnerUp = top3[1];
 
-  const confidence = runnerUp.distance - winner.distance;
+  let confidence = runnerUp.distance - winner.distance;
+  // 防平局：若 confidence 精确为 0，加入极小噪声避免尴尬展示
+  if (confidence === 0) {
+    confidence = 1e-6;
+  }
 
   let ambiguity;
   let presentation;
@@ -222,12 +225,8 @@ export function shouldTerminate(state, result, dims) {
   return { terminate: false };
 }
 
-// ===== 自适应选题 =====
-export function selectNext(questions, dims, personalities, state, rng) {
-  const { answeredIds, dimHistory, step } = state;
-  const used = new Set(answeredIds);
-
-  // 步骤1：计算每个维度的不确定性
+// ===== 辅助：计算各维度不确定性 =====
+function computeUncertainties(dimHistory, dims) {
   const uncertainties = {};
   for (const d of dims) {
     const hist = dimHistory[d] || [];
@@ -235,38 +234,148 @@ export function selectNext(questions, dims, personalities, state, rng) {
     const variance = count > 1
       ? varianceOf(hist.map(h => h.score))
       : 1.0;
-    // 答案越极端（|score|大），该维度不确定性越低
     const meanAbs = count > 0
       ? hist.reduce((a, h) => a + Math.abs(h.score), 0) / count
       : 0;
     uncertainties[d] = (1 / (count + 1)) * (variance + CONFIG.UNCERTAINTY_BASE) * (1 - 0.25 * meanAbs);
   }
+  return uncertainties;
+}
 
-  // 步骤2：覆盖补充检查
+// ===== 辅助：按不确定性排序维度 =====
+function sortDimsByUncertainty(uncertainties, dims) {
+  return dims.slice().sort((a, b) => uncertainties[b] - uncertainties[a]);
+}
+
+// ===== 辅助：找出 Top1 与 Top2 差异最大的维度 =====
+function findMostDiscriminativeDim(top2, personalities, dims) {
+  if (top2.length < 2) return null;
+  const p1 = personalities[top2[0].name];
+  const p2 = personalities[top2[1].name];
+  if (!p1 || !p2) return null;
+
+  let bestDim = null;
+  let maxDiff = -1;
+  for (const d of dims) {
+    const diff = Math.abs((p1[d] || 0) - (p2[d] || 0));
+    if (diff > maxDiff) {
+      maxDiff = diff;
+      bestDim = d;
+    }
+  }
+  return bestDim;
+}
+
+// ===== 辅助：检查最近连续同维度次数 =====
+function getConsecutiveDimCount(answeredIds, questions, targetDim) {
+  let count = 0;
+  for (let i = answeredIds.length - 1; i >= 0; i--) {
+    const q = questions.find(q => q.id === answeredIds[i]);
+    if (q && q.dim === targetDim) {
+      count++;
+    } else {
+      break;
+    }
+  }
+  return count;
+}
+
+// ===== 辅助：获取最近 N 题的 sceneTag =====
+function getRecentScenes(answeredIds, questions, n) {
+  const scenes = [];
+  for (let i = Math.max(0, answeredIds.length - n); i < answeredIds.length; i++) {
+    const q = questions.find(q => q.id === answeredIds[i]);
+    if (q && q.sceneTag) scenes.push(q.sceneTag);
+  }
+  return scenes;
+}
+
+// ===== 辅助：layer 过滤 =====
+function filterByLayer(pool, step) {
+  if (step <= CONFIG.LAYER_CORE_MAX_STEP) {
+    return pool.filter(q => q.layer === 'core');
+  } else if (step <= CONFIG.LAYER_SELECT_MAX_STEP) {
+    return pool.filter(q => q.layer === 'core' || q.layer === 'select');
+  }
+  return pool;
+}
+
+// ===== 辅助：反向验证优先 =====
+function applyReverseCheckPriority(pool, dimHistory, targetDim) {
+  const targetDimHist = dimHistory[targetDim] || [];
+  if (targetDimHist.length >= CONFIG.REVERSE_TRIGGER_COUNT) {
+    const recentScores = targetDimHist
+      .slice(-CONFIG.REVERSE_TRIGGER_COUNT)
+      .map(h => h.score);
+    const allPositive = recentScores.every(s => s > 0);
+    const allNegative = recentScores.every(s => s < 0);
+    if ((allPositive || allNegative) && pool.some(q => q.reverseCheck)) {
+      return pool.filter(q => q.reverseCheck);
+    }
+  }
+  return pool;
+}
+
+// ===== 自适应选题：倾向驱动 + 随机 =====
+export function selectNext(questions, dims, personalities, state, rng) {
+  const { answeredIds, dimHistory, step } = state;
+  const used = new Set(answeredIds);
+
+  // === 步骤1：计算维度不确定性 ===
+  const uncertainties = computeUncertainties(dimHistory, dims);
+  const sortedDims = sortDimsByUncertainty(uncertainties, dims);
+
+  // === 步骤2：强制覆盖检查（前6题每维至少1题） ===
   const underCovered = dims.filter(d => {
     const count = (dimHistory[d] || []).length;
     return step < CONFIG.COVERAGE_MAX_STEP && count < CONFIG.COVERAGE_MIN_COUNT;
   });
 
+  // === 步骤3：计算当前 Top 人格并找出最需区分的维度 ===
+  const currentVec = buildUserVector(dimHistory, dims);
+  const currentResult = determineResult(currentVec, personalities, dims);
+  const top2 = currentResult.top3.slice(0, 2);
+  const discriminativeDim = findMostDiscriminativeDim(top2, personalities, dims);
+
+  // === 步骤4：确定目标倾向维度 ===
   let targetDim;
+
   if (underCovered.length > 0) {
+    // 优先覆盖未答维度
     targetDim = underCovered.sort(
       (a, b) => uncertainties[b] - uncertainties[a]
     )[0];
   } else {
-    targetDim = dims.slice().sort(
-      (a, b) => uncertainties[b] - uncertainties[a]
-    )[0];
+    // 混合策略：前期偏重不确定性，后期偏重人格差异维度
+    const uncertaintyWeight = step <= CONFIG.EXPLORE_MAX_STEP ? 0.7 : 0.3;
+    const discrimWeight = 1 - uncertaintyWeight;
+
+    // 给每个维度打分 = uncertaintyWeight * normUncertainty + discrimWeight * discrimScore
+    const dimScores = {};
+    const maxUncertainty = Math.max(...Object.values(uncertainties));
+    for (const d of dims) {
+      const uScore = maxUncertainty > 0 ? uncertainties[d] / maxUncertainty : 0;
+      let dScore = 0;
+      if (discriminativeDim === d) {
+        // Top1/Top2 差异维度得分加成
+        dScore = 1.0;
+      }
+      dimScores[d] = uncertaintyWeight * uScore + discrimWeight * dScore;
+    }
+
+    const scoredDims = dims.slice().sort((a, b) => dimScores[b] - dimScores[a]);
+    targetDim = scoredDims[0];
+
+    // 探索/利用平衡：有概率选次优维度（防早熟）
+    if (step <= CONFIG.EXPLORE_MAX_STEP && rng() < CONFIG.EXPLORE_PROB && scoredDims.length > 1) {
+      targetDim = scoredDims[1];
+    }
   }
 
-  // 硬限制：如果最近2题都是同一维度，禁止再选该维度
-  const lastTwo = answeredIds.slice(-2);
-  const lastTwoDims = lastTwo.map(id => {
-    const q = questions.find(q => q.id === id);
-    return q ? q.dim : null;
-  }).filter(Boolean);
-  if (lastTwoDims.length === 2 && lastTwoDims[0] === lastTwoDims[1] && lastTwoDims[0] === targetDim) {
-    const sortedDims = dims.slice().sort((a, b) => uncertainties[b] - uncertainties[a]);
+  // === 步骤5：硬限制——连续同维度不超过2题 ===
+  const consecutiveCount = getConsecutiveDimCount(answeredIds, questions, targetDim);
+  if (consecutiveCount >= CONFIG.MAX_CONSECUTIVE_SAME_DIM) {
+    // 强制换维度，选不确定性次高的
     for (const d of sortedDims) {
       if (d !== targetDim) {
         targetDim = d;
@@ -275,82 +384,48 @@ export function selectNext(questions, dims, personalities, state, rng) {
     }
   }
 
-  // 步骤3：同维度内选区分力最强的题
-  let pool = questions.filter(q =>
-    q.dim === targetDim && !used.has(q.id)
-  );
+  // === 步骤6：构造候选池 ===
+  function buildPool(dim) {
+    let pool = questions.filter(q => q.dim === dim && !used.has(q.id));
+    if (pool.length === 0) return [];
 
+    // Layer 过滤
+    pool = filterByLayer(pool, step);
+    if (pool.length === 0) return [];
+
+    // SceneTag 去重
+    const recentScenes = getRecentScenes(answeredIds, questions, 2);
+    const poolWithoutScene = pool.filter(q => !recentScenes.includes(q.sceneTag));
+    if (poolWithoutScene.length > 0) {
+      pool = poolWithoutScene;
+    }
+
+    // 反向验证优先
+    pool = applyReverseCheckPriority(pool, dimHistory, dim);
+
+    return pool;
+  }
+
+  let pool = buildPool(targetDim);
+
+  // 如果目标维度无可用题，按不确定性降序尝试其他维度
   if (pool.length === 0) {
-    const sortedDims = dims.slice().sort(
-      (a, b) => uncertainties[b] - uncertainties[a]
-    );
     for (const d of sortedDims) {
-      pool = questions.filter(q => q.dim === d && !used.has(q.id));
-      if (pool.length > 0) break;
+      if (d === targetDim) continue;
+      pool = buildPool(d);
+      if (pool.length > 0) {
+        targetDim = d;
+        break;
+      }
     }
   }
 
-  // === 改造：混合信息增益（方差 + Top2 区分度）===
-  const currentVec = buildUserVector(dimHistory, dims);
-  const currentResult = determineResult(currentVec, personalities, dims);
-  const top2 = currentResult.top3.slice(0, 2);
-
-  const ALPHA = 0.4;
-  const BETA = 0.6;
-
-  pool = pool.map(q => {
-    const scores = q.opts.map(o => o.score);
-    const varGain = varianceOf(scores);
-
-    let discGain = 0;
-    if (top2.length >= 2) {
-      const pA = personalities[top2[0].name][q.dim];
-      const pB = personalities[top2[1].name][q.dim];
-      discGain = expectedScoreDiscrimination(scores, pA, pB);
-    }
-
-    const normVar = varGain / 0.625;
-    const normDisc = discGain / 1.3;
-    const infoGain = ALPHA * normVar + BETA * normDisc;
-
-    return { ...q, infoGain, varGain, discGain };
-  });
-  pool.sort((a, b) => b.infoGain - a.infoGain);
-
-  // 步骤4：防重复检查（sceneTag）
-  const recentScenes = [];
-  for (let i = Math.max(0, answeredIds.length - CONFIG.RECENT_SCENE_EXCLUDE); i < answeredIds.length; i++) {
-    const q = questions.find(q => q.id === answeredIds[i]);
-    if (q && q.sceneTag) recentScenes.push(q.sceneTag);
-  }
-  const filteredPool = pool.filter(q => !recentScenes.includes(q.sceneTag));
-  if (filteredPool.length > 0) {
-    pool = filteredPool;
+  // === 步骤7：纯随机抽题 ===
+  if (pool.length === 0) {
+    return null;
   }
 
-  // 步骤5：反向验证题优先
-  const targetDimHist = dimHistory[targetDim] || [];
-  if (targetDimHist.length >= CONFIG.REVERSE_TRIGGER_COUNT) {
-    const recentScores = targetDimHist.slice(-CONFIG.REVERSE_TRIGGER_COUNT).map(h => h.score);
-    const allPositive = recentScores.every(s => s > 0);
-    const allNegative = recentScores.every(s => s < 0);
-    if (allPositive || allNegative) {
-      const reversePool = pool.filter(q => q.reverseCheck);
-      if (reversePool.length > 0) pool = reversePool;
-    }
-  }
-
-  // 步骤6：随机扰动
-  const cutoff = Math.ceil(pool.length * CONFIG.INFO_GAIN_CUTOFF);
-  const ordered = pool.slice(0, cutoff);
-  const random = pool.slice(cutoff);
-
-  if (random.length > 0 && rng() < CONFIG.RANDOM_PICK_PROB) {
-    return random[Math.floor(rng() * random.length)];
-  }
-  const candidates = ordered.length > 0 ? ordered : random;
-  if (candidates.length === 0) return null;
-  return candidates[Math.floor(rng() * Math.min(candidates.length, CONFIG.TOP_CANDIDATES))];
+  return pool[Math.floor(rng() * pool.length)];
 }
 
 // ===== 应用答案 =====
@@ -369,30 +444,25 @@ export function applyAnswer(state, q, choiceIdx) {
   state.step++;
 }
 
-// 获取 dims 列表的辅助函数
-function getDims(data) {
-  return data.dims || ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'];
-}
-
 // ===== 撤销答案（用于返回上一题） =====
 export function undoAnswer(state, q, choiceIdx, dims) {
   const chosen = q.opts[choiceIdx];
   if (!chosen) return;
 
   const hist = state.dimHistory[q.dim];
-  if (hist && hist.length > 0) {
-    // 移除最后一次该题的答题记录（按step匹配）
-    const stepToRemove = state.step;
-    const idx = hist.findIndex(h => h.step === stepToRemove);
-    if (idx >= 0) {
-      hist.splice(idx, 1);
-      // === 新增：重新编排该维度后续记录的 step 序号 ===
-      for (let i = idx; i < hist.length; i++) {
-        hist[i].step = hist[i].step - 1;
-      }
-      // === 新增结束 ===
-    }
+  if (!hist || hist.length === 0) return;
+
+  // 移除最后一次该题的答题记录（按step匹配）
+  const stepToRemove = state.step;
+  const idx = hist.findIndex(h => h.step === stepToRemove);
+  if (idx < 0) return; // 未找到，直接返回，不修改任何状态
+
+  hist.splice(idx, 1);
+  // 重新编排该维度后续记录的 step 序号
+  for (let i = idx; i < hist.length; i++) {
+    hist[i].step = hist[i].step - 1;
   }
+
   state.answeredIds.pop();
   state.step--;
   state.userVector = buildUserVector(state.dimHistory, dims);
@@ -435,10 +505,10 @@ export function generateDimInterpretation(userVector, dimLabels) {
 
 // ===== 旧版兼容 =====
 export function setRulePriority() {
-  // v8 不再需要 rule priority
+  // v9 不再需要 rule priority
 }
 
 export function calcWinner() {
-  // v8 不再使用，保留空函数避免旧引用报错
+  // v9 不再使用，保留空函数避免旧引用报错
   return { winner: '', resolvedBy: 'legacy' };
 }
