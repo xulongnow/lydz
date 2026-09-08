@@ -147,6 +147,7 @@ function handleBack() {
     state.answeredIds.pop();
     state.step--;
     state.userVector = engine.buildUserVector(state.dimHistory, data.dims);
+    if (state.history) state.history.pop(); // 修复P0：同步 history
     state.currentQ = lastQ;
     state.shuffledOpts = engine.shuffleOptions(lastQ.opts);
   }
