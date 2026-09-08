@@ -16,8 +16,18 @@ let state = null;
 let data = null;
 
 export async function init() {
-  const res = await fetch('./data/quiz-data.json');
-  data = await res.json();
+  let loadedData;
+  try {
+    const res = await fetch('./data/quiz-data.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadedData = await res.json();
+  } catch (e) {
+    console.error(e);
+    const subEl = document.querySelector('.welcome-sub');
+    if (subEl) subEl.textContent = '数据加载失败，请检查网络后刷新页面';
+    return;
+  }
+  data = loadedData;
   engine.setRulePriority(data.questions, Object.keys(data.personalities || {}));
   welcomeUI.render(document.getElementById('welcome'), data);
   welcomeUI.bindEvents({ onStart: startQuiz });
@@ -26,7 +36,7 @@ export async function init() {
   // 检查 URL hash 是否有分享回放
   if (location.hash) {
     const decoded = decodeShare(location.hash);
-    if (decoded && decoded.p && decoded.p.length > 0) {
+    if (decoded && decoded.p && Array.isArray(decoded.p) && decoded.p.length > 0) {
       replay(decoded);
       return;
     }
@@ -63,7 +73,7 @@ function getCurrent() {
   return {
     step: answered + 1,
     total: totalDisplay,
-    progress: Math.round((answered / MAX_STEPS) * 100),
+    progress: Math.min(100, Math.round((answered / totalDisplay) * 100)),
     stem: state.currentQ.stem,
     dim: state.currentQ.dim,
     dimLabel: data.dimLabels && data.dimLabels[state.currentQ.dim] ? state.currentQ.dim : state.currentQ.dim,
@@ -96,6 +106,7 @@ function handleSelect(displayedIdx) {
   if (!state || !state.currentQ) return;
   state._prevSelectedIdx = undefined;
   const opt = state.shuffledOpts[displayedIdx];
+  if (!opt) return; // 防御：越界检查
   const origIdx = state.currentQ.opts.indexOf(opt);
   engine.applyAnswer(state, state.currentQ, origIdx);
 
@@ -141,7 +152,7 @@ function handleBack() {
     const prevOpt = lastQ.opts[lastHist.origIdx];
     state._prevSelectedIdx = lastHist.shuffledOpts.indexOf(prevOpt);
   } else {
-    // fallback: 直接减少历史
+    // fallback: 直接减少历史 —— 同步修复：同时 pop history
     const hist = state.dimHistory[lastQ.dim];
     if (hist && hist.length > 0) hist.pop();
     state.answeredIds.pop();
@@ -149,6 +160,10 @@ function handleBack() {
     state.userVector = engine.buildUserVector(state.dimHistory, data.dims);
     state.currentQ = lastQ;
     state.shuffledOpts = engine.shuffleOptions(lastQ.opts);
+    // 修复 P0：fallback 路径也要同步 pop history
+    if (state.history && state.history.length > 0) {
+      state.history.pop();
+    }
   }
   renderQuiz();
 }
@@ -189,7 +204,7 @@ function buildResult() {
   const buddyProfile = buddyName ? (data.profiles[buddyName] || { emoji: '🧳', tagline: '' }) : null;
   const buddies = buddyProfile ? [{ name: buddyName, emoji: buddyProfile.emoji, tagline: buddyProfile.tagline }] : [];
 
-  // 如果动态计算的搭子为空，回退到profile中的buddy
+  // 如果动态计算的搭子为空，回退到 profile 中的 buddy
   if (buddies.length === 0 && profile.buddy && profile.buddy.length > 0) {
     for (const name of profile.buddy) {
       const p = data.profiles[name];
@@ -234,8 +249,10 @@ function replay(decoded) {
   if (!state.history) state.history = [];
 
   for (let i = 0; i < decoded.p.length; i++) {
-    const qId = decoded.p[i][0];
-    const origIdx = decoded.p[i][1];
+    const item = decoded.p[i];
+    if (!Array.isArray(item) || item.length < 2) continue;
+    const qId = item[0];
+    const origIdx = item[1];
     const q = data.questions.find((qq) => qq.id === qId);
     if (!q) continue;
     if (origIdx < 0 || origIdx >= q.opts.length) continue;
@@ -262,10 +279,11 @@ function showPage(id) {
 // 键盘导航
 document.addEventListener('keydown', (e) => {
   const quizEl = document.getElementById('quiz');
-  if (quizEl && quizEl.style.display === 'block') {
-    if (e.key >= '1' && e.key <= '4') {
+  if (quizEl && quizEl.style.display === 'block' && state && state.shuffledOpts) {
+    const maxIdx = state.shuffledOpts.length;
+    if (e.key >= '1' && e.key <= String(maxIdx)) {
       const idx = parseInt(e.key, 10) - 1;
-      handleSelect(idx);
+      if (idx < maxIdx) handleSelect(idx);
     } else if (e.key === 'ArrowLeft') {
       handleBack();
     }

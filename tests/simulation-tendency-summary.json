@@ -1,0 +1,40 @@
+{
+  "engineVersion": "v9-tendency-red",
+  "totalQuestions": 342,
+  "personalityCount": 48,
+  "perfectCoverage": 48,
+  "noisyCoverage": 48,
+  "selfHitRate": 73.75,
+  "distribution": {
+    "min": 1,
+    "max": 13,
+    "avg": 5,
+    "top5Concentration": 19.58
+  },
+  "randomDistribution": {
+    "min": 1,
+    "max": 5,
+    "top5Concentration": 44
+  },
+  "steps": {
+    "avg": 17.03,
+    "min": 12,
+    "max": 24
+  },
+  "randomSteps": {
+    "avg": 17.42,
+    "min": 12,
+    "max": 24
+  },
+  "earlyCoverage": {
+    "fullCoverageCount": 50,
+    "totalRuns": 50,
+    "coverageRate": 1,
+    "avgCovered": 6,
+    "minCovered": 6
+  },
+  "undoOk": true,
+  "shareReplayOk": true,
+  "avgConfidence": 0.256,
+  "passed": true
+}
