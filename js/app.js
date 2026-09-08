@@ -23,12 +23,11 @@ export async function init() {
     loadedData = await res.json();
   } catch (e) {
     console.error(e);
-    const sub = document.querySelector('.welcome-sub');
-    if (sub) sub.textContent = '数据加载失败，请检查网络后刷新页面';
+    showLoadError();
     return;
   }
   data = loadedData;
-  engine.setRulePriority(data.questions, Object.keys(data.personalities || {}));
+  hideLoadError();
   welcomeUI.render(document.getElementById('welcome'), data);
   welcomeUI.bindEvents({ onStart: startQuiz });
   quizUI.bindEvents(handlers);
@@ -296,6 +295,33 @@ const handlers = {
   onBack: handleBack,
   onRestart: handleRestart,
 };
+
+// 数据加载错误状态 UI
+function showLoadError() {
+  const welcome = document.getElementById('welcome');
+  const error = document.getElementById('error');
+  if (welcome) welcome.style.display = 'none';
+  if (error) {
+    error.style.display = 'flex';
+    const retryBtn = error.querySelector('.error-retry-btn');
+    if (retryBtn) {
+      // 防止重复绑定
+      const newBtn = retryBtn.cloneNode(true);
+      retryBtn.parentNode.replaceChild(newBtn, retryBtn);
+      newBtn.addEventListener('click', () => {
+        error.style.display = 'none';
+        const welcome = document.getElementById('welcome');
+        if (welcome) welcome.style.display = 'flex';
+        init();
+      });
+    }
+  }
+}
+
+function hideLoadError() {
+  const error = document.getElementById('error');
+  if (error) error.style.display = 'none';
+}
 
 // 启动
 document.addEventListener('DOMContentLoaded', init);

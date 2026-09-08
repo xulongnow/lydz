@@ -37,9 +37,7 @@ export async function takeScreenshot(targetElement, filename) {
   toast.classList.add('show');
 
   try {
-    const module = await import(
-      'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js'
-    );
+    const module = await import('./vendor/html2canvas.esm.js');
     const html2canvas = module.default;
     const canvas = await html2canvas(targetElement, {
       backgroundColor: '#faf6ef',

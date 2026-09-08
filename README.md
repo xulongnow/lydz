@@ -18,9 +18,18 @@ lydz/
 │       ├── quiz.js         # 答题页
 │       └── result.js       # 结果页
 ├── tests/
-│   └── validate-data.js    # 数据校验脚本
+│   ├── validate-data.js    # 数据完整性校验
+│   └── validate-engine.js  # 判型引擎仿真验证
 └── README.md               # 本文件
 ```
+
+## 数据格式说明
+
+- **题目 ID 格式**：`dNNNN`（四位数字，如 `d1053`）
+- **总题数**：342 道场景题（含 30 道反向验证题）
+- **选项字段**：`score`（数值：1.0 / 0.3 / -0.3 / -1.0）
+- **自适应题数**：引擎自动选择 12–24 题，无需配置固定题数
+- **人格数**：48 种
 
 ## 如何增删改题目
 
@@ -30,12 +39,13 @@ lydz/
 
 1. 打开 `data/quiz-data.json`。
 2. 在 `questions` 数组末尾追加一个 Question 对象：
-   - `id`：取当前最大编号 +1，格式 `qNNN`（如现有最大 `q176`，新增用 `q177`）。
-   - `dim`：从 `dims` 数组中选一个维度。
+   - `id`：取当前最大编号 +1，格式 `dNNNN`（如现有最大 `d1053`，新增用 `d1054`）。
+   - `dim`：从 `dims` 数组中选一个维度（`D1`–`D6`）。
    - `layer`：按重要性选 `core` / `select` / `explore`。
    - `stem`：题干文本。
-   - `mains`：4 个选项对应的主导人格。
-   - `opts`：4 个选项，每个含 `text`、`main`、`weights`。
+   - `sceneTag`：场景标签，用于同场景去重。
+   - `opts`：4 个选项，每个含 `text`、`score`。
+   - `reverseCheck`（可选）：设为 `true` 表示反向验证题，引擎会自动翻转得分。
 3. 运行校验脚本确认合法：
    ```bash
    node tests/validate-data.js
@@ -45,7 +55,7 @@ lydz/
 ### 修改一道题
 
 1. 在 `questions` 数组中找到对应 `id`。
-2. 修改 `stem`、`opts[].text`、`opts[].weights` 等。**不要改 `id`**。
+2. 修改 `stem`、`opts[].text`、`opts[].score` 等。**不要改 `id`**。
 3. 运行 `node tests/validate-data.js`。
 4. 提交。
 
@@ -59,9 +69,9 @@ lydz/
 
 CAT 选路逻辑在 `js/engine.js` 的 `selectNext()` 函数中，与数据分离：
 
-- **改固定题数**（默认 18 题）：修改 `js/app.js` 中的 `TOTAL_STEPS` 常量 + `js/engine.js` 中的 step 阈值（`step < 10`、`step < 16`）。
-- **改 layer 阈值分布**：修改 `engine.js` 中的条件判断。
-- **改维度优先覆盖策略**：修改 `engine.js` 中 `coveredDims` / `dimCnt` 相关逻辑。
+- **改自适应题数区间**：修改 `js/engine.js` 中 `CONFIG.MIN_QUESTIONS` 和 `CONFIG.MAX_QUESTIONS`。
+- **改 layer 阈值分布**：修改 `engine.js` 中的 `LAYER_CORE_MAX_STEP` / `LAYER_SELECT_MAX_STEP`。
+- **改反向验证触发阈值**：修改 `CONFIG.REVERSE_TRIGGER_COUNT`。
 
 ## 数据校验
 
@@ -74,11 +84,23 @@ node tests/validate-data.js
 - `questions[].id` 全局唯一且格式正确
 - `questions[].dim` 在 `dims` 中存在
 - `questions[].layer` 为 `core`/`select`/`explore`
-- 每题 4 个选项，选项中 `weights` 人格名在 `types` 中存在
-- `profiles` 键集合与 `types` 一致
-- `profile.buddy` 人格名在 `types` 中存在
-- `meta.mutexPairs` 人格名在 `types` 中存在
+- 每题 4 个选项，选项中 `score` 为合法数值
+- `profiles` 键集合与 `personalities` 一致
+- `profile.buddy` 人格名在 `personalities` 中存在
 - 各 dim 在各 layer 下的题目数量分布
+- 各 dim 反向验证题数量 ≥5
+
+## 引擎验证
+
+```bash
+node tests/validate-engine.js
+```
+
+仿真测试（48 类人格 × 8 次，种子化 RNG）：
+- 自匹配率目标：≥80%
+- 前 6 题维度覆盖率：100%
+- 终止题数区间：[12, 24]
+- RNG 种子化可复现性
 
 ## 本地验证
 
@@ -106,4 +128,4 @@ python3 -m http.server 8080
 
 - 原生 ES Module（零构建）
 - 原生 CSS（CSS 变量）
-- html2canvas（按需动态加载，仅截图时引入）
+- html2canvas（本地 vendored，仅截图时按需加载）

@@ -487,11 +487,10 @@ export function applyAnswer(state, q, choiceIdx) {
     state.dimHistory[q.dim] = [];
   }
 
-  // 预留 reverseScore 适配层（P1-7）
-  let score = chosen.score;
-  if (q.reverseScore && typeof score === 'number') {
-    score = -score;
-  }
+  // reverseCheck 仅用于选题策略（applyReverseCheckPriority）。
+  // 数据层 score 已由生成脚本按选项语义正确编码（+1 始终对应维度正向），
+  // 计分时无需翻转；原 reverseScore 字段名与数据不一致，已清理。
+  const score = chosen.score;
 
   state.dimHistory[q.dim].push({
     score,
