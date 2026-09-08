@@ -28,7 +28,7 @@ export function decodeShare(hash) {
   }
 }
 
-/** 异步截图（html2canvas 按需加载） */
+/** 异步截图（html2canvas 本地 vendored，带加载失败兜底） */
 export async function takeScreenshot(targetElement, filename) {
   const toast = document.getElementById('screenshotToast');
   if (!toast) return;
@@ -37,9 +37,7 @@ export async function takeScreenshot(targetElement, filename) {
   toast.classList.add('show');
 
   try {
-    const module = await import(
-      'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js'
-    );
+    const module = await import('./vendor/html2canvas.esm.js');
     const html2canvas = module.default;
     const canvas = await html2canvas(targetElement, {
       backgroundColor: '#faf6ef',

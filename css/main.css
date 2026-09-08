@@ -626,3 +626,67 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+
+
+/* ========== Load Error State ========== */
+.load-error {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg, #faf6ef);
+  z-index: 1000;
+  padding: 24px;
+}
+.load-error-box {
+  text-align: center;
+  max-width: 320px;
+  padding: 32px 24px;
+  background: var(--card, #fffaf2);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.load-error-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.load-error-box h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink, #2c3e50);
+  margin-bottom: 8px;
+}
+.load-error-msg {
+  font-size: 14px;
+  color: var(--muted, #5a6c7d);
+  margin-bottom: 20px;
+  word-break: break-word;
+}
+.load-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.load-error-actions button {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+.load-error-actions button:hover {
+  opacity: 0.9;
+}
+.retry-btn {
+  background: var(--orange, #e8743b);
+  color: #fff;
+}
+.refresh-btn {
+  background: var(--paper, #f0ebe3);
+  color: var(--ink, #2c3e50);
+}

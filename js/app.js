@@ -23,12 +23,10 @@ export async function init() {
     loadedData = await res.json();
   } catch (e) {
     console.error(e);
-    const sub = document.querySelector('.welcome-sub');
-    if (sub) sub.textContent = '数据加载失败，请检查网络后刷新页面';
+    showLoadError(e.message || '网络请求失败');
     return;
   }
   data = loadedData;
-  engine.setRulePriority(data.questions, Object.keys(data.personalities || {}));
   welcomeUI.render(document.getElementById('welcome'), data);
   welcomeUI.bindEvents({ onStart: startQuiz });
   quizUI.bindEvents(handlers);
@@ -274,6 +272,40 @@ function showPage(id) {
     document.getElementById(p).style.display = p === id ? modes[p] : 'none';
   }
   window.scrollTo(0, 0);
+}
+
+function showLoadError(msg) {
+  const welcome = document.getElementById('welcome');
+  if (!welcome) return;
+
+  let errEl = document.getElementById('loadError');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.id = 'loadError';
+    errEl.className = 'load-error';
+    errEl.innerHTML = `
+      <div class="load-error-box">
+        <div class="load-error-icon">⚠️</div>
+        <h2>数据加载失败</h2>
+        <p class="load-error-msg"></p>
+        <div class="load-error-actions">
+          <button type="button" class="retry-btn" id="retryLoadBtn">重新加载</button>
+          <button type="button" class="refresh-btn" id="refreshPageBtn">刷新页面</button>
+        </div>
+      </div>
+    `;
+    welcome.appendChild(errEl);
+    document.getElementById('retryLoadBtn').addEventListener('click', () => {
+      errEl.querySelector('.load-error-msg').textContent = '正在重试...';
+      init();
+    });
+    document.getElementById('refreshPageBtn').addEventListener('click', () => {
+      location.reload();
+    });
+  }
+
+  errEl.querySelector('.load-error-msg').textContent = msg;
+  errEl.style.display = 'flex';
 }
 
 // 键盘导航

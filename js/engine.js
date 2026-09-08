@@ -487,9 +487,9 @@ export function applyAnswer(state, q, choiceIdx) {
     state.dimHistory[q.dim] = [];
   }
 
-  // 预留 reverseScore 适配层（P1-7）
+  // reverseCheck 适配层：反向验证题自动翻转得分
   let score = chosen.score;
-  if (q.reverseScore && typeof score === 'number') {
+  if (q.reverseCheck && typeof score === 'number') {
     score = -score;
   }
 

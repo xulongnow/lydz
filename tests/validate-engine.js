@@ -46,11 +46,16 @@ function simulateResponder(data, engine, targetName, noise = 0.15, seedOffset = 
     if (!q) break;
 
     // 选择策略：选 score 最接近目标向量该维度值的选项
+    // 反向题在引擎中会自动翻转得分，因此仿真器需模拟这一行为
     const targetScore = targetVec[q.dim] || 0;
     let preferredIdx = 0;
     let minDiff = Infinity;
     for (let i = 0; i < q.opts.length; i++) {
-      const diff = Math.abs(q.opts[i].score - targetScore);
+      let effectiveScore = q.opts[i].score;
+      if (q.reverseCheck) {
+        effectiveScore = -effectiveScore;
+      }
+      const diff = Math.abs(effectiveScore - targetScore);
       if (diff < minDiff) {
         minDiff = diff;
         preferredIdx = i;
