@@ -66,8 +66,8 @@ function validate(data) {
 
   // 5. questions
   const questions = data.questions || [];
-  if (questions.length < 320) {
-    errors.push(`题目数不足 320, 实际 ${questions.length}`);
+  if (questions.length < 350) {
+    errors.push(`题目数不足 350, 实际 ${questions.length}`);
   }
 
   const idSet = new Set();
