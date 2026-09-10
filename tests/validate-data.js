@@ -22,8 +22,8 @@ function validate(data) {
     if (!(k in data)) errors.push(`缺少顶层字段: ${k}`);
   }
 
-  if (data.version !== 'v8') {
-    errors.push(`version 应为 v8, 实际: ${data.version}`);
+  if (data.version !== 'v9') {
+    errors.push(`version 应为 v9, 实际: ${data.version}`);
   }
 
   // 2. dims

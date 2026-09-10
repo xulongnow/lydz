@@ -17,14 +17,25 @@ let data = null;
 
 export async function init() {
   let loadedData;
-  try {
-    const res = await fetch('./data/quiz-data.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    loadedData = await res.json();
-  } catch (e) {
-    console.error(e);
-    showLoadError(e.message || '网络请求失败');
-    return;
+  let retries = 0;
+  const MAX_RETRIES = 2;
+
+  while (retries <= MAX_RETRIES) {
+    try {
+      const res = await fetch('./data/quiz-data.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      loadedData = await res.json();
+      break;
+    } catch (e) {
+      retries++;
+      console.error(`Fetch attempt ${retries} failed:`, e);
+      if (retries > MAX_RETRIES) {
+        showLoadError(e.message || '网络请求失败');
+        return;
+      }
+      // 短暂延迟后自动重试
+      await new Promise(r => setTimeout(r, 100));
+    }
   }
   data = loadedData;
   welcomeUI.render(document.getElementById('welcome'), data);
