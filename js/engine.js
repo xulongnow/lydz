@@ -559,13 +559,3 @@ export function generateDimInterpretation(userVector, dimLabels) {
   }
   return interpretations;
 }
-
-// ===== 旧版兼容 =====
-export function setRulePriority() {
-  // v10 不再需要 rule priority
-}
-
-export function calcWinner() {
-  // v10 不再使用，保留空函数避免旧引用报错
-  return { winner: '', resolvedBy: 'legacy' };
-}
