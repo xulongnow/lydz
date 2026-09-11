@@ -121,7 +121,7 @@ function validate(data) {
   }
 
   for (const d of data.dims) {
-    if (dimQCount[d] < 50) errors.push(`${d} 题目不足 50, 实际 ${dimQCount[d]}`);
+    if (dimQCount[d] < 55) errors.push(`${d} 题目不足 55, 实际 ${dimQCount[d]}`);
     if (dimReverseCount[d] < 5) errors.push(`${d} reverseCheck 不足 5, 实际 ${dimReverseCount[d]}`);
   }
 

@@ -1,22 +1,22 @@
 {
-  "totalQuestions": 342,
+  "totalQuestions": 372,
   "personalityCount": 48,
   "seed": 42,
   "perfectCoverage": 48,
   "noisyCoverage": 48,
-  "selfHitRate": 91.15,
+  "selfHitRate": 91.17,
   "first6CoverageRate": 100,
   "distribution": {
-    "min": 4,
-    "max": 12,
-    "avg": 8
+    "min": 43,
+    "max": 56,
+    "avg": 50
   },
   "reverseCheckTriggered": true,
   "adaptiveDifferent": true,
   "rngReproducible": true,
-  "avgSteps": 15.78,
+  "avgSteps": 15.68,
   "minSteps": 12,
   "maxSteps": 24,
-  "avgConfidence": 0.289,
+  "avgConfidence": 0.286,
   "passed": true
 }

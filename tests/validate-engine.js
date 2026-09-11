@@ -117,7 +117,7 @@ async function main() {
   }
 
   // ===== 测试1：基础覆盖（低噪声 seeded） =====
-  console.log('\n--- 测试1：低噪声覆盖（每类 8 次，seeded） ---');
+  console.log('\n--- 测试1：低噪声覆盖（每类 50 次，seeded） ---');
   const coverage = new Set();
   const distribution = {};
   const targetHitCount = {};
@@ -127,7 +127,7 @@ async function main() {
   for (let i = 0; i < personalityNames.length; i++) {
     const name = personalityNames[i];
     targetHitCount[name] = 0;
-    for (let j = 0; j < 8; j++) {
+    for (let j = 0; j < 50; j++) {
       const seedOffset = i * 1000 + j;
       const run = simulateResponder(data, engine, name, 0.15, seedOffset);
       allRuns.push(run);
@@ -144,6 +144,37 @@ async function main() {
 
   const correctHits = Object.values(targetHitCount).filter(c => c > 0).length;
   console.log(`48 类人格中至少被正确测出 1 次: ${correctHits}/48`);
+
+  // ===== 测试1b：个体人格下限检查（≥75%，已知天花板人格除外） =====
+  const KNOWN_CEILING_PERSONALITIES = ['多啦A梦'];
+  const lowIndividual = [];
+  const ceilingLow = [];
+  for (const name of personalityNames) {
+    const rate = targetHitCount[name] / 50;
+    if (rate < 0.75) {
+      const info = `${name}: ${(rate * 100).toFixed(1)}% (${targetHitCount[name]}/50)`;
+      if (KNOWN_CEILING_PERSONALITIES.includes(name)) {
+        ceilingLow.push(info);
+      } else {
+        lowIndividual.push(info);
+      }
+    }
+  }
+  if (ceilingLow.length > 0) {
+    console.log(`⚠️ 已知天花板人格 <75% (${ceilingLow.length}):`);
+    for (const item of ceilingLow) {
+      console.log(`    - ${item}`);
+    }
+  }
+  if (lowIndividual.length > 0) {
+    console.log(`❌ 非天花板人格 <75% (${lowIndividual.length}):`);
+    for (const item of lowIndividual) {
+      console.log(`    - ${item}`);
+    }
+  }
+  if (ceilingLow.length === 0 && lowIndividual.length === 0) {
+    console.log(`✅ 全部人格个体下限 ≥75%`);
+  }
 
   const missedTypes = personalityNames.filter(n => !coverage.has(n));
   if (missedTypes.length > 0) {
@@ -280,6 +311,13 @@ async function main() {
     console.log(`⚠️ 自匹配率: ${selfHitRate.toFixed(1)}%（低于目标 80-85%）`);
   } else {
     console.log(`✅ 自匹配率: ${selfHitRate.toFixed(1)}%`);
+  }
+
+  if (lowIndividual.length > 0) {
+    console.log(`❌ 个体下限不足: ${lowIndividual.length} 个非天花板人格 <75%`);
+    passed = false;
+  } else {
+    console.log(`✅ 全部非天花板人格个体下限 ≥75%`);
   }
 
   if (first6Rate < 1.0) {
