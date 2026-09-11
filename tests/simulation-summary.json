@@ -4,19 +4,19 @@
   "seed": 42,
   "perfectCoverage": 48,
   "noisyCoverage": 48,
-  "selfHitRate": 91.17,
+  "selfHitRate": 91.63,
   "first6CoverageRate": 100,
   "distribution": {
-    "min": 43,
-    "max": 56,
+    "min": 41,
+    "max": 59,
     "avg": 50
   },
-  "reverseCheckTriggered": true,
+  "reverseCheckTriggered": false,
   "adaptiveDifferent": true,
   "rngReproducible": true,
-  "avgSteps": 15.68,
+  "avgSteps": 14.67,
   "minSteps": 12,
   "maxSteps": 24,
-  "avgConfidence": 0.286,
+  "avgConfidence": 0.32,
   "passed": true
 }
