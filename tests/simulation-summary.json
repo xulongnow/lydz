@@ -11,7 +11,7 @@
     "max": 59,
     "avg": 50
   },
-  "reverseCheckTriggered": false,
+  "reverseCheckTriggered": true,
   "adaptiveDifferent": true,
   "rngReproducible": true,
   "avgSteps": 14.67,

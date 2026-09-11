@@ -209,12 +209,7 @@ async function main() {
   for (let i = 0; i < 18; i++) {
     const q = engine.selectNext(data.questions, data.dims, data.personalities, extremeState, extremeRng);
     if (!q) break;
-    let idx;
-    if (q.dim === 'D1') {
-      idx = q.opts.findIndex(o => o.score === 1.0);
-    } else {
-      idx = Math.floor(extremeRng() * 4);
-    }
+    let idx = q.opts.findIndex(o => o.score === Math.max(...q.opts.map(o => o.score)));
     engine.applyAnswer(extremeState, q, idx >= 0 ? idx : 0);
     extremeState.userVector = engine.buildUserVector(extremeState.dimHistory, data.dims);
     if (q.reverseCheck) {
