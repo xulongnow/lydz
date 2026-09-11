@@ -7,7 +7,7 @@
  * 运行: node tests/validate-fetch-fallback.js
  */
 
-const { JSDOM } = require('/home/gem/.aily/.cli/npm/node_modules/jsdom');
+const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
