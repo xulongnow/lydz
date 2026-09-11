@@ -72,7 +72,7 @@ function validate(data) {
 
   const idSet = new Set();
   const idRegex = /^[a-z0-9]+$/;
-  const validLayers = ['core', 'select', 'explore'];
+  const validLayers = ['core', 'select', 'explore', 'distinguish'];
   const validScores = [1.0, 0.3, -0.3, -1.0];
 
   const dimQCount = {};
@@ -141,7 +141,8 @@ function validate(data) {
     const c = dist[`${d}/core`] || 0;
     const s = dist[`${d}/select`] || 0;
     const e = dist[`${d}/explore`] || 0;
-    console.log(`  ${d}: core=${c}, select=${s}, explore=${e}, reverse=${dimReverseCount[d]}`);
+    const di = dist[`${d}/distinguish`] || 0;
+    console.log(`  ${d}: core=${c}, select=${s}, explore=${e}, distinguish=${di}, reverse=${dimReverseCount[d]}`);
   }
 
   return errors;
